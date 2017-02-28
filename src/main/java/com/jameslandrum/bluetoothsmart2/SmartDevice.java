@@ -21,6 +21,7 @@ import android.content.Context;
 import android.util.SparseArray;
 import com.annimon.stream.Stream;
 import com.jameslandrum.bluetoothsmart2.actionqueue.ActionRunner;
+import com.jameslandrum.bluetoothsmart2.actionqueue.ExecutionQueue;
 import com.jameslandrum.bluetoothsmart2.actionqueue.Intentions;
 import com.jameslandrum.bluetoothsmart2.annotations.DeviceParameters;
 
@@ -63,6 +64,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     }
 
     protected void startIntentions(Intentions queue) {
+        mActionRunner.addQueue(new ExecutionQueue(queue));
     }
 
     @Override
@@ -70,10 +72,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         super.onConnectionStateChange(gatt, status, newState);
         mConnected = newState == BluetoothAdapter.STATE_CONNECTED;
         if (newState == BluetoothAdapter.STATE_CONNECTED) {
+            Logging.notice("Device %s connected.", this.getClass().getSimpleName());
             mActiveConnection = gatt;
             mActiveConnection.discoverServices();
             Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CONNECTED));
         } else if (newState == BluetoothAdapter.STATE_DISCONNECTED) {
+            Logging.notice("Device %s disconnected.", this.getClass().getSimpleName());
             Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_DISCONNECTED));
             mActiveConnection = null;
             gatt.close();
@@ -82,6 +86,8 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+        Logging.notice("Device %s services discovered.", this.getClass().getSimpleName());
+
         DeviceParameters parameters = getClass().getAnnotation(DeviceParameters.class);
         if (parameters == null) throw new RuntimeException("Device must have DeviceParameters annotation.");
 
@@ -111,7 +117,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     }
 
     public boolean isConnected() {
-        return mServicesDiscovered;
+        return mServicesDiscovered && mActiveConnection != null;
     }
 
     public boolean isReady() {
@@ -128,6 +134,10 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     public void notifyEvent(int event) {
 
+    }
+
+    public BluetoothDevice getDevice() {
+        return mDevice;
     }
 
     public void newAdvertisement(byte[] data, int rssi) {

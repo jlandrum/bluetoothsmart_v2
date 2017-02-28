@@ -17,6 +17,8 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.os.Build;
+import com.jameslandrum.bluetoothsmart2.SmartDeviceManager;
 import com.jameslandrum.bluetoothsmart2.annotations.Sequential;
 
 import java.util.ArrayList;
@@ -45,6 +47,7 @@ public class Intentions {
          */
         public Builder() {
             mIntentions = new Intentions();
+            mIntentions.mActions.add(0,new ConnectAction(SmartDeviceManager.getActiveContext()));
         }
 
         /**

@@ -33,6 +33,7 @@ class ConnectAction implements Action {
 
     @Override
     public int execute(SmartDevice device, int maxWait) {
+        if (device.isConnected()) return ActionResult.ERROR_OK;
         device.subscribeToUpdates((event)-> {
             switch (event) {
                 case SmartDevice.EVENT_DISCONNECTED:
@@ -57,9 +58,10 @@ class ConnectAction implements Action {
 
         synchronized (mLock) {
             try {
-                mLock.wait();
+                mLock.wait(5000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                mError = ActionResult.ERROR_TIMED_OUT;
             }
         }
 

@@ -17,10 +17,13 @@
 package com.jameslandrum.bluetoothsmart2;
 
 import android.app.Application;
+import android.content.Context;
 import com.jameslandrum.bluetoothsmart2.actionqueue.Identifier;
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
 
 import java.lang.ref.WeakReference;
+import java.util.Iterator;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 public class SmartDeviceManager {
@@ -57,12 +60,18 @@ public class SmartDeviceManager {
         SmartDeviceManager.mActiveContext = new WeakReference<>(activeContext);
     }
 
+    public static Context getActiveContext() {
+        return mActiveContext.get();
+    }
+
     public void startScan()
     {
         if (mIsForeground) {
             mScanner.startScan(mActiveMode, mActiveBatchInterval);
+            Logging.notice("Starting scan in Active mode.");
         } else {
             mScanner.startScan(mYieldMode, mYieldBatchInterval);
+            Logging.notice("Starting scan in Passive mode.");
         }
     }
 
@@ -79,6 +88,7 @@ public class SmartDeviceManager {
     }
 
     private void scanParametersChanged() {
+        Logging.notice("Scan parameters have changed. Restarting scanning.");
         startScan();
     }
 
@@ -104,5 +114,21 @@ public class SmartDeviceManager {
 
     public void removeScanListener(ScannerCallback scannerListener) {
         mScanner.removeScanListener(scannerListener);
+    }
+
+    public void resume() {
+        Logging.notice("Resuming Scanning");
+        mIsForeground = true;
+        scanParametersChanged();
+    }
+
+    public void yield() {
+        Logging.notice("Yielding Scanning");
+        mIsForeground = false;
+        scanParametersChanged();
+    }
+
+    public List<SmartDevice> getAllDevices() {
+        return mScanner.getAllDevices();
     }
 }

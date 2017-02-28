@@ -17,6 +17,7 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.annotation.SuppressLint;
+import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,11 +26,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Represents a queue for an action to be applied to a connected device
  */
 @SuppressLint("NewApi")
-class ExecutionQueue {
+public class ExecutionQueue {
     private ConcurrentLinkedQueue<Action> mPendingActions = new ConcurrentLinkedQueue<>();
     private int mWaitLimit;
 
-    ExecutionQueue(Intentions intention) {
+    public ExecutionQueue(Intentions intention) {
         mPendingActions.addAll(intention.getActions());
         mWaitLimit = intention.getWaitLimit();
     }
@@ -40,6 +41,8 @@ class ExecutionQueue {
 
     boolean step(SmartDevice mDevice) {
         Action action = mPendingActions.remove();
-        return action.execute(mDevice, mWaitLimit) == ActionResult.ERROR_OK;
+        int result = action.execute(mDevice, mWaitLimit);
+        Logging.notice("Action %s completed with return code: %d ", action.getClass().getSimpleName(), result);
+        return result == ActionResult.ERROR_OK;
     }
 }

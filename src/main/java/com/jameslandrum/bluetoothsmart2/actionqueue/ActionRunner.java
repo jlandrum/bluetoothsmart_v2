@@ -16,6 +16,7 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
+import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 import java.util.ArrayList;
@@ -35,26 +36,32 @@ public class ActionRunner extends Thread {
 
         @Override
         public void run() {
-            try {
-                while (!interrupted()) {
+            Logging.notice("ActionRunner thread has started.");
+            while (!interrupted()) {
+                try {
                     if (!mQueues.isEmpty()) {
                         ExecutionQueue mActiveQueue = mQueues.remove(0);
                         while (!mActiveQueue.completed()) {
-                            if (!mActiveQueue.step(mDevice)) break;
+                            if (!mActiveQueue.step(mDevice)) {
+                                break;
+                            }
                         }
                     } else {
                         synchronized (mLock) {
-                            mLock.wait(15000);
+                            mLock.wait();
                         }
                     }
-                }
-            } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {}
+            }
+            Logging.notice("ActionRunner thread has terminated.");
             mExecutor = null;
         }
 
         void insertQueue(ExecutionQueue queue) {
             mQueues.add(queue);
-            mLock.notify();
+            synchronized (mLock) {
+                mLock.notify();
+            }
         }
     }
 

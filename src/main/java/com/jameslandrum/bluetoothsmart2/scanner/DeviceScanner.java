@@ -109,9 +109,10 @@ public abstract class DeviceScanner {
         } else if (!isBeacon) {
             Optional<Identifier> identifier = Stream.of(mIdentifiers).filter(id -> {
                 if (id.getName() != null && !id.getName().equals(device.getName())) return false;
-                if (device.fetchUuidsWithSdp())
                 if (!Stream.of(id.getUuids()).allMatch(uuid->
-                     Stream.of(uuids).anyMatch(duuid-> duuid != null && duuid.equals(uuid)))) return false;
+                     Stream.of(uuids).anyMatch(duuid-> duuid != null && duuid.equals(uuid)))) {
+                    return false;
+                }
                 if (id.getByteId() != null && !id.getByteId().checkBytes(data)) return false;
                 return true;
             }).findFirst();

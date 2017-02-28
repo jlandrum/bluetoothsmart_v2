@@ -35,6 +35,7 @@ class WriteCharacteristicAction implements BluetoothAction {
 
     @Override
     public int execute(SmartDevice device, int maxWait) {
+        if (!device.isConnected()) return ActionResult.ERROR_NOT_READY;
         Characteristic characteristic = device.getCharacteristic(mCharId);
         BluetoothGattCharacteristic gattCharacteristic = characteristic.getCharacteristic();
         gattCharacteristic.setValue(mData);
