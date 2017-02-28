@@ -40,6 +40,7 @@ public class ActionRunner extends Thread {
             while (!interrupted()) {
                 try {
                     if (!mQueues.isEmpty()) {
+                        Logging.notice("ActionRunner queue started.");
                         ExecutionQueue mActiveQueue = mQueues.remove(0);
                         while (!mActiveQueue.completed()) {
                             if (!mActiveQueue.step(mDevice)) {
@@ -47,6 +48,7 @@ public class ActionRunner extends Thread {
                             }
                         }
                     } else {
+                        Logging.notice("ActionRunner queue ended.");
                         synchronized (mLock) {
                             mLock.wait();
                         }

@@ -19,7 +19,14 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 @SuppressWarnings("unused")
-interface Action {
-    int execute(SmartDevice device, int maxWait);
-    boolean handleError(int mError);
+abstract class Action {
+    private Conditional mCondition = ()->true;
+
+    abstract int execute(SmartDevice device, int maxWait);
+    abstract boolean handleError(int mError);
+    abstract boolean purge();
+
+    void addCondition(Conditional check) {
+        mCondition = check;
+    }
 }

@@ -38,6 +38,11 @@ public class Ensure implements Action {
         return false;
     }
 
+    @Override
+    public boolean purge() {
+        return true;
+    }
+
     public interface Insurance {
         int ensure();
     }

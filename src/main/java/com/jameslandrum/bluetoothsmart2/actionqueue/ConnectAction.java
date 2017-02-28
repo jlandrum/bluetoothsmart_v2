@@ -20,7 +20,7 @@ import android.content.Context;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
-class ConnectAction implements Action {
+class ConnectAction extends Action {
     public static final int ERROR_CONNECTION_TIMEOUT = -16;
 
     private final Object mLock = new Object();
@@ -71,5 +71,15 @@ class ConnectAction implements Action {
     @Override
     public boolean handleError(int mError) {
         return false;
+    }
+
+    @Override
+    public boolean purge() {
+        return true;
+    }
+
+    @Override
+    public void addCondition(Conditional check) {
+
     }
 }

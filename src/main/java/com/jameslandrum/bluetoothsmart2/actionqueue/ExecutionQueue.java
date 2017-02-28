@@ -40,9 +40,10 @@ public class ExecutionQueue {
     }
 
     boolean step(SmartDevice mDevice) {
-        Action action = mPendingActions.remove();
+        Action action = mPendingActions.peek();
         int result = action.execute(mDevice, mWaitLimit);
+        if (action.purge()) mPendingActions.remove(action);
         Logging.notice("Action %s completed with return code: %d ", action.getClass().getSimpleName(), result);
-        return result == ActionResult.ERROR_OK;
+        return result == ActionResult.ERROR_OK || action.handleError(result);
     }
 }

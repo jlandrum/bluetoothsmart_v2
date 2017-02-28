@@ -18,8 +18,9 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class ActionResult {
-    public static int ERROR_UNKNOWN = -3;
-    public static int ERROR_TIMED_OUT = -2;
-    public static int ERROR_NOT_READY = -1;
-    public static int ERROR_OK = 0;
+    public static final int ERROR_CONDITION_NOT_MET = -4;
+    public static final int ERROR_UNKNOWN = -3;
+    public static final int ERROR_TIMED_OUT = -2;
+    public static final int ERROR_NOT_READY = -1;
+    public static final int ERROR_OK = 0;
 }

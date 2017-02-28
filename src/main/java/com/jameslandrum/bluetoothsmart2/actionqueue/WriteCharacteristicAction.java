@@ -44,6 +44,11 @@ class WriteCharacteristicAction implements BluetoothAction {
     }
 
     @Override
+    public boolean purge() {
+        return true;
+    }
+
+    @Override
     public boolean handleError(int error) {
         return mErrorHandler != null && mErrorHandler.error(error);
     }

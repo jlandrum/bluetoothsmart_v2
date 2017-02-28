@@ -41,6 +41,7 @@ public class Intentions {
     @SuppressWarnings("unused")
     public static class Builder {
         Intentions mIntentions;
+        Conditional mConditional;
 
         /**
          * Builder for creating a new intention.
@@ -48,6 +49,20 @@ public class Intentions {
         public Builder() {
             mIntentions = new Intentions();
             mIntentions.mActions.add(0,new ConnectAction(SmartDeviceManager.getActiveContext()));
+        }
+
+        /**
+         * Begins a conditional block. If the check passes, then the following commands
+         * will be executed, otherwise they will be skipped.
+         * Notice:
+         * @param check The check to execute.
+         * @return The builder.
+         */
+        @Sequential
+        public Builder onlyIf(Conditional check) {
+            if (mIntentions.getActions().size() == 0) throw new RuntimeException("onlyIf can only be used after a step.");
+            mIntentions.getActions().get(mIntentions.getActions().size()-1).addCondition(check);
+            return this;
         }
 
         /**
@@ -107,9 +122,16 @@ public class Intentions {
             return this;
         }
 
+        public Builder appendIntention(Intentions mIntentions) {
+            mIntentions.mActions.addAll(mIntentions.getActions());
+            return this;
+        }
+
         public Intentions build() {
+            if (mConditional != null) throw new RuntimeException("Conditional block must be closed.");
             return mIntentions;
         }
+
     }
 
     public int getWaitLimit() {
