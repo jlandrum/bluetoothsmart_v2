@@ -171,9 +171,4 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public long getLastSeen() {
         return mLastSeen;
     }
-
-    public boolean isBusy() {
-        return mActionRunner.isBusy();
-    }
-
 }

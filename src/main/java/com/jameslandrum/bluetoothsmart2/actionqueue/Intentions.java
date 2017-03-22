@@ -142,6 +142,11 @@ public class Intentions {
             if (mConditional != null) throw new RuntimeException("Conditional block must be closed.");
             return mIntentions;
         }
+
+        public Builder then(ExecuteAction.Execute execute) {
+            mIntentions.mActions.add(new ExecuteAction(execute));
+            return this;
+        }
     }
 
     public int getWaitLimit() {

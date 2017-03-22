@@ -26,14 +26,9 @@ public class ActionRunner extends Thread {
     private final Object mLock = new Object();
     private Executor mExecutor;
     private SmartDevice mDevice;
-    private boolean mBusy;
 
     public ActionRunner(SmartDevice parent) {
         mDevice = parent;
-    }
-
-    public boolean isBusy() {
-        return mBusy;
     }
 
     private class Executor extends Thread {
@@ -45,7 +40,6 @@ public class ActionRunner extends Thread {
             while (!interrupted()) {
                 try {
                     if (!mQueues.isEmpty()) {
-                        mBusy = true;
                         Logging.notice("ActionRunner queue started.");
                         ExecutionQueue mActiveQueue = mQueues.remove(0);
                         while (!mActiveQueue.completed()) {
@@ -54,7 +48,6 @@ public class ActionRunner extends Thread {
                             }
                         }
                     } else {
-                        mBusy = false;
                         Logging.notice("ActionRunner queue ended.");
                         synchronized (mLock) {
                             mLock.wait();
