@@ -21,7 +21,7 @@ import com.jameslandrum.bluetoothsmart2.SmartDevice;
 /**
  * Executes to validate state before, during or after a queue.
  */
-public class Ensure implements Action {
+public class Ensure extends Action {
     private Insurance mInsurance;
 
     Ensure(Insurance insurance) {

@@ -45,6 +45,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     private boolean mServicesDiscovered;
     private byte[] mAdvertisement;
     private int mRssi;
+    private long mLastSeen;
 
     public void init(BluetoothDevice device) {
         mDevice = device;
@@ -141,6 +142,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     }
 
     public void newAdvertisement(byte[] data, int rssi) {
+        mLastSeen = System.currentTimeMillis();
         mAdvertisement = data;
         mRssi = rssi;
     }
@@ -151,5 +153,9 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     public byte[] getAdvertisement() {
         return mAdvertisement;
+    }
+
+    public long getLastSeen() {
+        return mLastSeen;
     }
 }

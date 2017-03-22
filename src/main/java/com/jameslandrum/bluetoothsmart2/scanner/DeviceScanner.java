@@ -58,6 +58,7 @@ public abstract class DeviceScanner {
     public void forgetDevice(SmartDevice device) {
         mInvalidDevices.remove(device.getAddress());
         mDevices.remove(device.getAddress());
+        Stream.of(mListeners).forEach(e->e.onDeviceEvent(ScannerCallback.DEVICE_FORGOTTEN, device));
     }
 
     public void injectDevice(SmartDevice device) {
