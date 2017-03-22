@@ -148,4 +148,8 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public int getRssi() {
         return mRssi;
     }
+
+    public byte[] getAdvertisement() {
+        return mAdvertisement;
+    }
 }
