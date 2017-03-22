@@ -16,57 +16,41 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
-import android.bluetooth.BluetoothGattCharacteristic;
-import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
-class WriteCharacteristicAction extends BluetoothAction {
-    private final int mCharId;
-    private final byte[] mData;
-    private final int mWriteMode;
-    private ErrorHandler mErrorHandler;
+@SuppressWarnings({"unused", "WeakerAccess"})
+class DisconnectAction extends Action {
+    public static final int ERROR_CONNECTION_TIMEOUT = -16;
+
     private final Object mLock = new Object();
     private int mError = ActionResult.ERROR_UNKNOWN;
 
-    WriteCharacteristicAction(int characteristicId, ErrorHandler handler, int writeMode, byte[] data) {
-        mCharId = characteristicId;
-        mErrorHandler = handler;
-        mData = data;
-        mWriteMode = writeMode;
-    }
+    public DisconnectAction() {}
 
     @Override
     public int execute(SmartDevice device, int maxWait) {
-        if (!device.isConnected()) return ActionResult.ERROR_NOT_READY;
-
+        if (!device.isConnected()) return ActionResult.ERROR_OK;
         device.subscribeToUpdates((event)-> {
             switch (event) {
-                case SmartDevice.EVENT_CONNECTION_ERROR:
-                    mError = ConnectAction.ERROR_CONNECTION_TIMEOUT;
-                    synchronized (mLock) {
-                        mLock.notify();
-                    }
-                    break;
-                case SmartDevice.EVENT_CHARACTERISTIC_WRITTEN:
+                case SmartDevice.EVENT_DISCONNECTED:
                     mError = ActionResult.ERROR_OK;
                     synchronized (mLock) {
                         mLock.notify();
                     }
                     break;
+                case SmartDevice.EVENT_CONNECTION_ERROR:
+                    mError = DisconnectAction.ERROR_CONNECTION_TIMEOUT;
+                    synchronized (mLock) {
+                        mLock.notify();
+                    }
+                    break;
+                case SmartDevice.EVENT_SERVICES_DISCOVERED:
                 default:
                     break;
             }
         });
 
-        try {
-            Characteristic characteristic = device.getCharacteristic(mCharId);
-            BluetoothGattCharacteristic gattCharacteristic = characteristic.getCharacteristic();
-            gattCharacteristic.setValue(mData);
-            gattCharacteristic.setWriteType(mWriteMode);
-            device.getActiveConnection().writeCharacteristic(gattCharacteristic);
-        } catch (Exception e) {
-            return ActionResult.ERROR_UNKNOWN;
-        }
+        device.disconnect();
 
         synchronized (mLock) {
             try {
@@ -81,12 +65,17 @@ class WriteCharacteristicAction extends BluetoothAction {
     }
 
     @Override
+    public boolean handleError(int mError) {
+        return false;
+    }
+
+    @Override
     public boolean purge() {
         return true;
     }
 
     @Override
-    public boolean handleError(int error) {
-        return mErrorHandler != null && mErrorHandler.error(error);
+    public void addCondition(Conditional check) {
+
     }
 }

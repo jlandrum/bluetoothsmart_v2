@@ -27,6 +27,7 @@ import com.jameslandrum.bluetoothsmart2.annotations.DeviceParameters;
 
 import java.util.HashSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class SmartDevice extends BluetoothGattCallback {
     public static final int EVENT_CONNECTED = 0x01;
@@ -36,10 +37,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public static final int EVENT_NEW_BEACON = 0x05;
     public static final int EVENT_NEW_ADVERTISEMENT = 0x06;
 
+    public static final int EVENT_CHARACTERISTIC_WRITTEN = 0x10;
+
     private BluetoothDevice mDevice;
     private ActionRunner mActionRunner = new ActionRunner(this);
     private SparseArray<Characteristic> mCharacteristics = new SparseArray<>();
-    private HashSet<DeviceUpdateListener> mListeners = new HashSet<>();
+    private ConcurrentLinkedQueue<DeviceUpdateListener> mListeners = new ConcurrentLinkedQueue<>();
     private BluetoothGatt mActiveConnection;
     private boolean mConnected;
     private boolean mServicesDiscovered;
@@ -62,6 +65,10 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     public void connect(Context context) {
         mDevice.connectGatt(context, false, this);
+    }
+
+    public void disconnect() {
+        if (mActiveConnection!=null) mActiveConnection.disconnect();
     }
 
     protected void startIntentions(Intentions queue) {
@@ -117,6 +124,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_SERVICES_DISCOVERED));
     }
 
+    @Override
+    public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+        super.onCharacteristicWrite(gatt, characteristic, status);
+        Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_WRITTEN));
+    }
+
     public boolean isConnected() {
         return mServicesDiscovered && mActiveConnection != null;
     }
@@ -158,4 +171,9 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public long getLastSeen() {
         return mLastSeen;
     }
+
+    public boolean isBusy() {
+        return mActionRunner.isBusy();
+    }
+
 }

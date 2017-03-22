@@ -48,7 +48,11 @@ public class Intentions {
          */
         public Builder() {
             mIntentions = new Intentions();
+        }
+
+        public Builder connect() {
             mIntentions.mActions.add(0,new ConnectAction(SmartDeviceManager.getActiveContext()));
+            return this;
         }
 
         /**
@@ -122,8 +126,15 @@ public class Intentions {
             return this;
         }
 
-        public Builder appendIntention(Intentions mIntentions) {
-            mIntentions.mActions.addAll(mIntentions.getActions());
+        @Sequential
+        public Builder disconnect() {
+            mIntentions.mActions.add(new DisconnectAction());
+            return this;
+        }
+
+        @Sequential
+        public Builder appendIntention(Intentions intentions) {
+            mIntentions.mActions.addAll(intentions.getActions());
             return this;
         }
 
@@ -131,7 +142,6 @@ public class Intentions {
             if (mConditional != null) throw new RuntimeException("Conditional block must be closed.");
             return mIntentions;
         }
-
     }
 
     public int getWaitLimit() {

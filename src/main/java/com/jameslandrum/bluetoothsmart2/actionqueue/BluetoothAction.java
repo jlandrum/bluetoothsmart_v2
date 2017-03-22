@@ -16,5 +16,5 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
-interface BluetoothAction extends Action {
+abstract class BluetoothAction extends Action {
 }

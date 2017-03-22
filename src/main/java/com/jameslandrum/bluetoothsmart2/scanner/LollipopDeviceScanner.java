@@ -111,5 +111,10 @@ public class LollipopDeviceScanner extends DeviceScanner {
                 }
             }
         }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            super.onScanFailed(errorCode);
+        }
     };
 }

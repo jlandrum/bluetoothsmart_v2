@@ -143,4 +143,9 @@ public class SmartDeviceManager {
                 .filter(d->System.currentTimeMillis()-d.getLastSeen()>staleTime)
                 .forEach(d->mScanner.forgetDevice(d));
     }
+
+    public SmartDevice getDeviceByMac(String macAddress) {
+
+        return mScanner.getDeviceByMacAddress(macAddress);
+    }
 }
