@@ -58,7 +58,7 @@ class ConnectAction extends Action {
 
         synchronized (mLock) {
             try {
-                mLock.wait(5000);
+                mLock.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 mError = ActionResult.ERROR_TIMED_OUT;
