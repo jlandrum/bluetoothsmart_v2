@@ -46,7 +46,7 @@ final class WriteCharacteristicAction extends Action {
                 Characteristic characteristic = device.getCharacteristic(mCharId);
                 BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
                 gattCharacteristic.setValue(mData);
-                gattCharacteristic.setWriteType(mWriteMode);
+                if (mWriteMode != -1) gattCharacteristic.setWriteType(mWriteMode);
                 device.getActiveConnection().writeCharacteristic(gattCharacteristic);
                 waitForFinish(mTimeout);
             } catch (Exception e) {

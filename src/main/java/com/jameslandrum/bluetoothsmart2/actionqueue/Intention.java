@@ -79,7 +79,7 @@ public final class Intention {
         @SuppressWarnings("SameParameterValue")
         @Sequential
         public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler, byte ... data) {
-            return changeCharacteristic(characteristicId, timeout, resultHandler, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, data);
+            return changeCharacteristic(characteristicId, timeout, resultHandler, -1, data);
         }
 
         /**
