@@ -22,7 +22,7 @@ import com.jameslandrum.bluetoothsmart2.SmartDevice;
 import java.util.ArrayList;
 
 @SuppressWarnings("unused")
-public class ActionRunner extends Thread {
+public final class ActionRunner extends Thread {
     private final Object mLock = new Object();
     private Executor mExecutor;
     private SmartDevice mDevice;

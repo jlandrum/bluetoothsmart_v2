@@ -16,34 +16,11 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
-import com.jameslandrum.bluetoothsmart2.SmartDevice;
-
 /**
- * Executes to validate state before, during or after a queue.
+ * Executes after an action is completed.
+ * The default handler implemented in Action causes this to return
+ * true on
  */
-public class Ensure extends Action {
-    private Insurance mInsurance;
-
-    Ensure(Insurance insurance) {
-        mInsurance = insurance;
-    }
-
-    @Override
-    public int execute(SmartDevice device, int maxWait) {
-        return mInsurance.ensure();
-    }
-
-    @Override
-    public boolean handleError(int mError) {
-        return false;
-    }
-
-    @Override
-    public boolean purge() {
-        return true;
-    }
-
-    public interface Insurance {
-        int ensure();
-    }
+public interface ResultHandler {
+    boolean invoke(Action.Result value);
 }

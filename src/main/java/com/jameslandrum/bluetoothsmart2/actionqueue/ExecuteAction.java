@@ -16,27 +16,24 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
+import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 /**
- * Runs a method, always succeeds.
+ * Executes code in an intent pipeline.
+ * The executed action may throw an error, and if it does, should handle the result.
  */
-public class ExecuteAction extends Action {
+final class ExecuteAction extends Action {
     private Execute mExecutor;
 
-    ExecuteAction(Execute insurance) {
-        mExecutor = insurance;
+    ExecuteAction(Execute executor, @Nullable ResultHandler handler) {
+        super(handler,-1);
+        mExecutor = executor;
     }
 
     @Override
-    public int execute(SmartDevice device, int maxWait) {
-        mExecutor.execute();
-        return ActionResult.ERROR_OK;
-    }
-
-    @Override
-    public boolean handleError(int mError) {
-        return false;
+    public Result execute(SmartDevice device, int maxWait) {
+        return mExecutor.execute();
     }
 
     @Override
@@ -45,6 +42,6 @@ public class ExecuteAction extends Action {
     }
 
     public interface Execute {
-        void execute();
+        Result execute();
     }
 }

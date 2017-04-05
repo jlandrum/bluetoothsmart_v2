@@ -26,11 +26,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Represents a queue for an action to be applied to a connected device
  */
 @SuppressLint("NewApi")
-public class ExecutionQueue {
+public final class ExecutionQueue {
     private ConcurrentLinkedQueue<Action> mPendingActions = new ConcurrentLinkedQueue<>();
     private int mWaitLimit;
 
-    public ExecutionQueue(Intentions intention) {
+    public ExecutionQueue(Intention intention) {
         mPendingActions.addAll(intention.getActions());
         mWaitLimit = intention.getWaitLimit();
     }
@@ -41,9 +41,9 @@ public class ExecutionQueue {
 
     boolean step(SmartDevice mDevice) {
         Action action = mPendingActions.peek();
-        int result = action.execute(mDevice, mWaitLimit);
+        Action.Result result = action.execute(mDevice, mWaitLimit);
         if (action.purge()) mPendingActions.remove(action);
-        Logging.notice("Action %s completed with return code: %d ", action.getClass().getSimpleName(), result);
-        return result == ActionResult.ERROR_OK || action.handleError(result);
+        Logging.notice("Action %s completed with return code: %s ", action.getClass().getSimpleName(), result);
+        return action.handleResult(result);
     }
 }

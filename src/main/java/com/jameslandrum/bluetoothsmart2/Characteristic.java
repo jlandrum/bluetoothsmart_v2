@@ -24,8 +24,12 @@ public class Characteristic {
     Characteristic(BluetoothGattCharacteristic nativeChar) {
         mCharacteristic = nativeChar;
     }
-
-    public BluetoothGattCharacteristic getCharacteristic() {
+    public BluetoothGattCharacteristic getNativeCharacteristic() {
         return mCharacteristic;
+    }
+
+    public byte[] getValue() {
+        if (mCharacteristic != null) return mCharacteristic.getValue();
+        return null;
     }
 }

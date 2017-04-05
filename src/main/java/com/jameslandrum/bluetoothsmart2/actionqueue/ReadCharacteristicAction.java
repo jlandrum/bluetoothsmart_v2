@@ -17,19 +17,16 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
-final class WriteCharacteristicAction extends Action {
+final class ReadCharacteristicAction extends Action {
     private final int mCharId;
-    private final byte[] mData;
-    private final int mWriteMode;
 
-    WriteCharacteristicAction(int characteristicId, int timeout, ResultHandler handler, int writeMode, byte[] data) {
+    ReadCharacteristicAction(int characteristicId, int timeout, @Nullable ResultHandler handler, byte[] data) {
         super(handler, timeout);
         mCharId = characteristicId;
-        mData = data;
-        mWriteMode = writeMode;
     }
 
     @Override
@@ -37,18 +34,20 @@ final class WriteCharacteristicAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates((event) -> {
+            device.subscribeToUpdates((event)-> {
                 switch (event) {
                     case SmartDevice.EVENT_SECURITY_FAILURE:
                         setResult(Result.BONDING_REQUIRED);
                         finish();
                         break;
+                    case SmartDevice.EVENT_CHARACTERISTIC_READ_FAILURE:
                     case SmartDevice.EVENT_CONNECTION_ERROR:
                         setResult(Result.FAILED);
                         finish();
                         break;
-                    case SmartDevice.EVENT_CHARACTERISTIC_WRITTEN:
+                    case SmartDevice.EVENT_CHARACTERISTIC_READ:
                         setResult(Result.OK);
+                        finish();
                         break;
                     default:
                         break;
@@ -58,10 +57,8 @@ final class WriteCharacteristicAction extends Action {
             try {
                 Characteristic characteristic = device.getCharacteristic(mCharId);
                 BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
-                gattCharacteristic.setValue(mData);
-                gattCharacteristic.setWriteType(mWriteMode);
-                device.getActiveConnection().writeCharacteristic(gattCharacteristic);
-                waitForFinish();
+                device.getActiveConnection().readCharacteristic(gattCharacteristic);
+                waitForFinish(getTimeout());
             } catch (Exception e) {
                 setResult(Result.UNKNOWN);
             }

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 @SuppressWarnings("ALL")
-public class Identifier {
+public final class Identifier {
     private String mName;
     private ArrayList<UUID> mUuids = new ArrayList<>();
     private ByteId mByteId;

@@ -16,66 +16,45 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
+import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
-class DisconnectAction extends Action {
+final class DisconnectAction extends Action {
     public static final int ERROR_CONNECTION_TIMEOUT = -16;
 
-    private final Object mLock = new Object();
-    private int mError = ActionResult.ERROR_UNKNOWN;
-
-    public DisconnectAction() {}
-
-    @Override
-    public int execute(SmartDevice device, int maxWait) {
-        if (!device.isConnected()) return ActionResult.ERROR_OK;
-        device.subscribeToUpdates((event)-> {
-            switch (event) {
-                case SmartDevice.EVENT_DISCONNECTED:
-                    mError = ActionResult.ERROR_OK;
-                    synchronized (mLock) {
-                        mLock.notify();
-                    }
-                    break;
-                case SmartDevice.EVENT_CONNECTION_ERROR:
-                    mError = DisconnectAction.ERROR_CONNECTION_TIMEOUT;
-                    synchronized (mLock) {
-                        mLock.notify();
-                    }
-                    break;
-                case SmartDevice.EVENT_SERVICES_DISCOVERED:
-                default:
-                    break;
-            }
-        });
-
-        device.disconnect();
-
-        synchronized (mLock) {
-            try {
-                mLock.wait(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                mError = ActionResult.ERROR_TIMED_OUT;
-            }
-        }
-
-        return mError;
+    public DisconnectAction(@Nullable ResultHandler handler) {
+        super(handler,-1);
     }
 
     @Override
-    public boolean handleError(int mError) {
-        return false;
+    public Result execute(SmartDevice device, int maxWait) {
+        if (!device.isConnected()) {
+            setResult(Result.OK);
+        } else {
+            device.subscribeToUpdates((event) -> {
+                switch (event) {
+                    case SmartDevice.EVENT_DISCONNECTED:
+                        setResult(Result.OK);
+                        finish();
+                        break;
+                    case SmartDevice.EVENT_CONNECTION_ERROR:
+                        setResult(Result.FAILED);
+                        finish();
+                        break;
+                    default:
+                        break;
+                }
+            });
+            device.disconnect();
+            waitForFinish();
+        }
+
+        return getResult();
     }
 
     @Override
     public boolean purge() {
         return true;
-    }
-
-    @Override
-    public void addCondition(Conditional check) {
-
     }
 }

@@ -18,15 +18,74 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
-@SuppressWarnings("unused")
-abstract class Action {
-    private Conditional mCondition = ()->true;
+public abstract class Action {
+    private ResultHandler mResultHandler = (code)->code == Result.OK;
+    private int mTimeoutTime;
+    private final Object mLock = new Object();
+    private Result mResult = Result.UNKNOWN;
 
-    abstract int execute(SmartDevice device, int maxWait);
-    abstract boolean handleError(int mError);
+    public Action(ResultHandler handler, int timeoutTime) {
+        if (handler!=null) mResultHandler = handler;
+        mTimeoutTime = timeoutTime;
+    }
+
+    boolean handleResult(Result resultCode) {
+        return mResultHandler.invoke(resultCode);
+    }
+    int getTimeout() { return mTimeoutTime; }
+
+    void setResult(Result result) {
+        mResult = result;
+    }
+
+    void finish() {
+        synchronized (mLock) {
+            mLock.notify();
+        }
+    }
+
+    void waitForFinish() {
+        synchronized (mLock) {
+            try {
+                mLock.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                mResult = Result.TIMED_OUT;
+            }
+        }
+    }
+
+    void waitForFinish(int timeout) {
+        synchronized (mLock) {
+            try {
+                if (timeout == -1) mLock.wait();
+                else mLock.wait(timeout);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                mResult = Result.TIMED_OUT;
+            }
+        }
+    }
+
+    public Result getResult() {
+        return mResult;
+    }
+
+    abstract Result execute(SmartDevice device, int maxWait);
     abstract boolean purge();
 
-    void addCondition(Conditional check) {
-        mCondition = check;
+    public enum Result {
+        /** An unusual error occured **/
+        UNKNOWN,
+        /** The action timed out before it could be completed. **/
+        TIMED_OUT,
+        /** The device is not in a state applicable to the action provided **/
+        NOT_READY,
+        /** The action completed successfully **/
+        OK,
+        /** The action failed to finish successfully **/
+        FAILED,
+        /** The action failed due to the device requiring bonding to access the given resource **/
+        BONDING_REQUIRED,
     }
 }

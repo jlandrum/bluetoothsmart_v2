@@ -22,10 +22,9 @@ import android.util.SparseArray;
 import com.annimon.stream.Stream;
 import com.jameslandrum.bluetoothsmart2.actionqueue.ActionRunner;
 import com.jameslandrum.bluetoothsmart2.actionqueue.ExecutionQueue;
-import com.jameslandrum.bluetoothsmart2.actionqueue.Intentions;
+import com.jameslandrum.bluetoothsmart2.actionqueue.Intention;
 import com.jameslandrum.bluetoothsmart2.annotations.DeviceParameters;
 
-import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -36,8 +35,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public static final int EVENT_CONNECTION_ERROR = 0x04;
     public static final int EVENT_NEW_BEACON = 0x05;
     public static final int EVENT_NEW_ADVERTISEMENT = 0x06;
+    public static final int EVENT_SECURITY_FAILURE = 0x07;
 
     public static final int EVENT_CHARACTERISTIC_WRITTEN = 0x10;
+    public static final int EVENT_CHARACTERISTIC_WRITE_FAILURE = 0x9010;
+    public static final int EVENT_CHARACTERISTIC_READ = 0x11;
+    public static final int EVENT_CHARACTERISTIC_READ_FAILURE = 0x9011;
 
     private BluetoothDevice mDevice;
     private ActionRunner mActionRunner = new ActionRunner(this);
@@ -71,7 +74,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         if (mActiveConnection!=null) mActiveConnection.disconnect();
     }
 
-    protected void startIntentions(Intentions queue) {
+    protected void startIntentions(Intention queue) {
         mActionRunner.addQueue(new ExecutionQueue(queue));
     }
 
@@ -125,9 +128,35 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     }
 
     @Override
+    @SuppressWarnings("Duplicates")
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        super.onCharacteristicWrite(gatt, characteristic, status);
-        Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_WRITTEN));
+        switch (status) {
+            case BluetoothGatt.GATT_SUCCESS:
+                Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_WRITTEN));
+                return;
+            case BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION:
+            case BluetoothGatt.GATT_INSUFFICIENT_ENCRYPTION:
+                Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_SECURITY_FAILURE));
+                return;
+            default:
+                Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_WRITE_FAILURE));
+        }
+    }
+
+    @Override
+    @SuppressWarnings("Duplicates")
+    public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+        switch (status) {
+            case BluetoothGatt.GATT_SUCCESS:
+                Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_READ));
+                return;
+            case BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION:
+            case BluetoothGatt.GATT_INSUFFICIENT_ENCRYPTION:
+                Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_SECURITY_FAILURE));
+                return;
+            default:
+                Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_READ_FAILURE));
+        }
     }
 
     public boolean isConnected() {
