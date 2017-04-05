@@ -27,12 +27,12 @@ final class ExecuteAction extends Action {
     private Execute mExecutor;
 
     ExecuteAction(Execute executor, @Nullable ResultHandler handler) {
-        super(handler,-1);
+        super(handler);
         mExecutor = executor;
     }
 
     @Override
-    public Result execute(SmartDevice device, int maxWait) {
+    public Result execute(SmartDevice ignored) {
         return mExecutor.execute();
     }
 

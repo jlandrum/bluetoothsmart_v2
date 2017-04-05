@@ -24,16 +24,18 @@ final class WriteCharacteristicAction extends Action {
     private final int mCharId;
     private final byte[] mData;
     private final int mWriteMode;
+    private final int mTimeout;
 
     WriteCharacteristicAction(int characteristicId, int timeout, ResultHandler handler, int writeMode, byte[] data) {
-        super(handler, timeout);
+        super(handler);
         mCharId = characteristicId;
         mData = data;
         mWriteMode = writeMode;
+        mTimeout = timeout;
     }
 
     @Override
-    public Result execute(SmartDevice device, int maxWait) {
+    public Result execute(SmartDevice device) {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
@@ -61,7 +63,7 @@ final class WriteCharacteristicAction extends Action {
                 gattCharacteristic.setValue(mData);
                 gattCharacteristic.setWriteType(mWriteMode);
                 device.getActiveConnection().writeCharacteristic(gattCharacteristic);
-                waitForFinish();
+                waitForFinish(mTimeout);
             } catch (Exception e) {
                 setResult(Result.UNKNOWN);
             }

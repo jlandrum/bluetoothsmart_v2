@@ -24,12 +24,12 @@ final class ConnectAction extends Action {
     private Context mContext;
 
     ConnectAction(Context context, @Nullable ResultHandler handler) {
-        super(handler,-1);
+        super(handler);
         mContext = context;
     }
 
     @Override
-    public Result execute(SmartDevice device, int maxWait) {
+    public Result execute(SmartDevice device) {
         if (device.isConnected()) {
             setResult(Result.OK);
         } else {

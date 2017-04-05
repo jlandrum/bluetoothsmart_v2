@@ -23,14 +23,16 @@ import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class ReadCharacteristicAction extends Action {
     private final int mCharId;
+    private final int mWait;
 
-    ReadCharacteristicAction(int characteristicId, int timeout, @Nullable ResultHandler handler, byte[] data) {
-        super(handler, timeout);
+    ReadCharacteristicAction(int characteristicId, int wait, @Nullable ResultHandler handler) {
+        super(handler);
         mCharId = characteristicId;
+        mWait = wait;
     }
 
     @Override
-    public Result execute(SmartDevice device, int maxWait) {
+    public Result execute(SmartDevice device) {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
@@ -58,7 +60,7 @@ final class ReadCharacteristicAction extends Action {
                 Characteristic characteristic = device.getCharacteristic(mCharId);
                 BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
                 device.getActiveConnection().readCharacteristic(gattCharacteristic);
-                waitForFinish(getTimeout());
+                waitForFinish(mWait);
             } catch (Exception e) {
                 setResult(Result.UNKNOWN);
             }

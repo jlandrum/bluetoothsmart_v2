@@ -30,7 +30,6 @@ import java.util.ArrayList;
  * even if the two devices are manufactured by separate entities.
  */
 public final class Intention {
-    private int mWaitLimit = 300;                               // How long an action may take before being considered "Failed"
     private ArrayList<Action> mActions = new ArrayList<>();     // The list of actions to be taken.
 
     /**
@@ -50,6 +49,14 @@ public final class Intention {
 
         /**
          * Connects to the target device.
+         * @return The builder.
+         */
+        public Builder connect() {
+            return connect(null);
+        }
+
+        /**
+         * Connects to the target device.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @return The builder.
          */
@@ -62,30 +69,60 @@ public final class Intention {
          * Changes the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
          * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param timeout How long before the action should be cancelled and a timeout error thrown.
+         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
+         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @param data The byte data to write
          * @return The builder.
          */
         @SuppressWarnings("SameParameterValue")
         @Sequential
-        public Builder changeCharacteristic(int characteristicId, @Nullable ResultHandler resultHandler, byte ... data) {
-            changeCharacteristic(characteristicId, resultHandler,BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, data);
-            return this;
+        public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler, byte ... data) {
+            return changeCharacteristic(characteristicId, timeout, resultHandler, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, data);
         }
 
         /**
          * Changes the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
          * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param timeout How long before the action should be cancelled and a timeout error thrown.
+         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
+         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @param writeMode The BluetoothGattCharacteristic WRITE_TYPE to write with.
          * @param data The byte data to write
          * @return The builder.
          */
         @Sequential
-        public Builder changeCharacteristic(int characteristicId, @Nullable ResultHandler resultHandler, int writeMode, byte ... data) {
-            mIntentions.mActions.add(new WriteCharacteristicAction(characteristicId, resultHandler, writeMode, data));
+        public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler, int writeMode, byte ... data) {
+            mIntentions.mActions.add(new WriteCharacteristicAction(characteristicId, timeout, resultHandler, writeMode, data));
             return this;
+        }
+
+        /**
+         * Reads the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
+         * resolved.
+         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param timeout How long before the action should be cancelled and a timeout error thrown.
+         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
+         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
+         * @param resultHandler An optional handler to be called once the action completes or fails.
+         * @return The builder.
+         */
+        @Sequential
+        public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler) {
+            mIntentions.mActions.add(new ReadCharacteristicAction(characteristicId, timeout, resultHandler));
+            return this;
+        }
+
+        /**
+         * Disconnects from the target device.
+         * @return The builder.
+         */
+        @Sequential
+        public Builder disconnect() {
+            return disconnect(null);
         }
 
         /**
@@ -115,6 +152,18 @@ public final class Intention {
          * If the event should not block future events in the queue, it should ensure that it explicitly
          * returns Result.OK;
          * @param execute The method to execute.
+         * @return
+         */
+        @Sequential
+        public Builder then(ExecuteAction.Execute execute) {
+            return then(execute,null);
+        }
+
+        /**
+         * Executes an action at the given time in the queue.
+         * If the event should not block future events in the queue, it should ensure that it explicitly
+         * returns Result.OK;
+         * @param execute The method to execute.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @return
          */
@@ -128,10 +177,6 @@ public final class Intention {
             return mIntentions;
         }
 
-    }
-
-    public int getWaitLimit() {
-        return mWaitLimit;
     }
 
     public ArrayList<Action> getActions() {

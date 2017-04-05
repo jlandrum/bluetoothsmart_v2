@@ -28,11 +28,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @SuppressLint("NewApi")
 public final class ExecutionQueue {
     private ConcurrentLinkedQueue<Action> mPendingActions = new ConcurrentLinkedQueue<>();
-    private int mWaitLimit;
 
     public ExecutionQueue(Intention intention) {
         mPendingActions.addAll(intention.getActions());
-        mWaitLimit = intention.getWaitLimit();
     }
 
     boolean completed() {
@@ -41,7 +39,7 @@ public final class ExecutionQueue {
 
     boolean step(SmartDevice mDevice) {
         Action action = mPendingActions.peek();
-        Action.Result result = action.execute(mDevice, mWaitLimit);
+        Action.Result result = action.execute(mDevice);
         if (action.purge()) mPendingActions.remove(action);
         Logging.notice("Action %s completed with return code: %s ", action.getClass().getSimpleName(), result);
         return action.handleResult(result);

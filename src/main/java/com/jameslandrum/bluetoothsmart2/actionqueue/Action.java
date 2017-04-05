@@ -20,19 +20,16 @@ import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 public abstract class Action {
     private ResultHandler mResultHandler = (code)->code == Result.OK;
-    private int mTimeoutTime;
     private final Object mLock = new Object();
     private Result mResult = Result.UNKNOWN;
 
-    public Action(ResultHandler handler, int timeoutTime) {
+    public Action(ResultHandler handler) {
         if (handler!=null) mResultHandler = handler;
-        mTimeoutTime = timeoutTime;
     }
 
     boolean handleResult(Result resultCode) {
         return mResultHandler.invoke(resultCode);
     }
-    int getTimeout() { return mTimeoutTime; }
 
     void setResult(Result result) {
         mResult = result;
@@ -71,11 +68,11 @@ public abstract class Action {
         return mResult;
     }
 
-    abstract Result execute(SmartDevice device, int maxWait);
+    abstract Result execute(SmartDevice device);
     abstract boolean purge();
 
     public enum Result {
-        /** An unusual error occured **/
+        /** An unusual error occurred **/
         UNKNOWN,
         /** The action timed out before it could be completed. **/
         TIMED_OUT,

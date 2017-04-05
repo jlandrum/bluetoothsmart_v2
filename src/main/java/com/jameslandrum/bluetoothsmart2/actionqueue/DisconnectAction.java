@@ -24,11 +24,11 @@ final class DisconnectAction extends Action {
     public static final int ERROR_CONNECTION_TIMEOUT = -16;
 
     public DisconnectAction(@Nullable ResultHandler handler) {
-        super(handler,-1);
+        super(handler);
     }
 
     @Override
-    public Result execute(SmartDevice device, int maxWait) {
+    public Result execute(SmartDevice device) {
         if (!device.isConnected()) {
             setResult(Result.OK);
         } else {
