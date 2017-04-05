@@ -171,6 +171,10 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         mListeners.add(listener);
     }
 
+    public void unsubscribeToUpdates(DeviceUpdateListener listener) {
+        mListeners.remove(listener);
+    }
+
     public String getAddress() {
         return mDevice.getAddress();
     }

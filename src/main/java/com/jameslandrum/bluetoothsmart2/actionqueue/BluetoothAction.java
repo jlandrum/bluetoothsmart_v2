@@ -20,8 +20,6 @@ import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 public abstract class BluetoothAction extends Action {
     public BluetoothAction(ResultHandler handler, int timeoutTime) {
-        super(handler, timeoutTime);
+        super(handler);
     }
-
-
 }

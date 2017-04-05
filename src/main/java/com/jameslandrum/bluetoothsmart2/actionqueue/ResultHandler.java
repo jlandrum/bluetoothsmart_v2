@@ -18,8 +18,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 /**
  * Executes after an action is completed.
- * The default handler implemented in Action causes this to return
- * true on
+ * Should return false if for some reason, the intent should terminate prematurely.
  */
 public interface ResultHandler {
     boolean invoke(Action.Result value);

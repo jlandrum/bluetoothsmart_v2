@@ -79,7 +79,7 @@ public final class Intention {
         @SuppressWarnings("SameParameterValue")
         @Sequential
         public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler, byte ... data) {
-            return changeCharacteristic(characteristicId, timeout, resultHandler, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, data);
+            return changeCharacteristic(characteristicId, timeout, resultHandler, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, data);
         }
 
         /**
@@ -111,7 +111,7 @@ public final class Intention {
          * @return The builder.
          */
         @Sequential
-        public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler) {
+        public Builder readCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler) {
             mIntentions.mActions.add(new ReadCharacteristicAction(characteristicId, timeout, resultHandler));
             return this;
         }
