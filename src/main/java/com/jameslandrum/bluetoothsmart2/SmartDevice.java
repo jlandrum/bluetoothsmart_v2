@@ -191,12 +191,8 @@ public abstract class SmartDevice extends BluetoothGattCallback {
                 .forEach(Characteristic::notifyUpdate);
     }
 
-    public boolean isConnected() {
-        return mServicesDiscovered && mActiveConnection != null;
-    }
-
     public boolean isReady() {
-        return mServicesDiscovered;
+        return mServicesDiscovered && mActiveConnection != null;
     }
 
     public void subscribeToUpdates(DeviceUpdateListener listener) {
@@ -249,7 +245,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         if (c != null) c.removeCallback(notifyCallback);
     }
 
-    public boolean isActuallyConnected() {
+    public boolean isConnected() {
         return mConnected;
     }
 }

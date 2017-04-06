@@ -31,7 +31,7 @@ final class ConnectAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        if (device.isActuallyConnected()) {
+        if (device.isConnected()) {
             setResult(Result.OK);
         } else {
             device.subscribeToUpdates(mListener);

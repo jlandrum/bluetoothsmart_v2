@@ -30,7 +30,7 @@ final class DisconnectAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        if (!device.isConnected()) {
+        if (!device.isReady()) {
             setResult(Result.OK);
         } else {
             device.subscribeToUpdates(mListener);

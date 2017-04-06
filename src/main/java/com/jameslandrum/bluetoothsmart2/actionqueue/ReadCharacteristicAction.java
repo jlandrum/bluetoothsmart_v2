@@ -34,7 +34,7 @@ final class ReadCharacteristicAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        if (!device.isConnected()) {
+        if (!device.isReady()) {
             setResult(Result.NOT_READY);
         } else {
             device.subscribeToUpdates(mListener);

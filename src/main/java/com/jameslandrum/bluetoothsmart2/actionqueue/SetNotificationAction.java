@@ -20,7 +20,6 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
-import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class SetNotificationAction extends Action {
@@ -43,7 +42,7 @@ final class SetNotificationAction extends Action {
     public Result execute(SmartDevice device) {
         Characteristic characteristic = null;
 
-        if (!device.isConnected()) {
+        if (!device.isReady()) {
             setResult(Result.NOT_READY);
         } else {
             device.subscribeToUpdates(mListener);
