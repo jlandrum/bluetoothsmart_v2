@@ -33,12 +33,12 @@ final class DisconnectAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.OK);
         } else {
-            device.subscribeToUpdates(this::onDeviceUpdateEvent);
+            device.subscribeToUpdates(mListener);
             device.disconnect();
             waitForFinish();
         }
 
-        device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
+        device.unsubscribeToUpdates(mListener);
         return getResult();
     }
 
@@ -47,7 +47,7 @@ final class DisconnectAction extends Action {
         return true;
     }
 
-    private void onDeviceUpdateEvent(int action) {
+    private final DeviceUpdateListener mListener = (action) -> {
         switch (action) {
             case SmartDevice.EVENT_DISCONNECTED:
                 setResult(Result.OK);
@@ -60,5 +60,5 @@ final class DisconnectAction extends Action {
             default:
                 break;
         }
-    }
+    };
 }

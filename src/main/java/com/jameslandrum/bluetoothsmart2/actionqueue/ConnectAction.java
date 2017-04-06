@@ -31,15 +31,15 @@ final class ConnectAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        if (device.isConnected()) {
+        if (device.isActuallyConnected()) {
             setResult(Result.OK);
         } else {
-            device.subscribeToUpdates(this::onDeviceUpdateEvent);
+            device.subscribeToUpdates(mListener);
             device.connect(mContext);
-            waitForFinish();
+            waitForFinish(60000);
         }
 
-        device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
+        device.unsubscribeToUpdates(mListener);
         return getResult();
     }
 
@@ -48,7 +48,7 @@ final class ConnectAction extends Action {
         return true;
     }
 
-    private void onDeviceUpdateEvent(int action) {
+    private final DeviceUpdateListener mListener = (action) -> {
         switch (action) {
             case SmartDevice.EVENT_DISCONNECTED:
             case SmartDevice.EVENT_CONNECTION_ERROR:
@@ -62,5 +62,5 @@ final class ConnectAction extends Action {
             default:
                 break;
         }
-    }
+    };
 }

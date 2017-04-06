@@ -19,6 +19,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
+import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
@@ -45,7 +46,7 @@ final class SetNotificationAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates(this::onDeviceUpdateEvent);
+            device.subscribeToUpdates(mListener);
             try {
                 characteristic = device.getCharacteristic(mCharId);
                 BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
@@ -58,7 +59,7 @@ final class SetNotificationAction extends Action {
                 setResult(Result.UNKNOWN);
             }
 
-            device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
+            device.unsubscribeToUpdates(mListener);
         }
 
         Result result = getResult();
@@ -76,7 +77,7 @@ final class SetNotificationAction extends Action {
         return result;
     }
 
-    private void onDeviceUpdateEvent(int action) {
+    private final DeviceUpdateListener mListener = (action) -> {
         switch (action) {
             case SmartDevice.EVENT_CHARACTERISTIC_WRITE_FAILURE:
             case SmartDevice.EVENT_CONNECTION_ERROR:
@@ -90,7 +91,7 @@ final class SetNotificationAction extends Action {
             default:
                 break;
         }
-    }
+    };
 
     @Override
     public boolean purge() {

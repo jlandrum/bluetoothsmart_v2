@@ -54,6 +54,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     private byte[] mAdvertisement = new byte[62];
     private int mRssi;
     private long mLastSeen;
+    private boolean mConnected;
 
     public void init(BluetoothDevice device) {
         mDevice = device;
@@ -98,6 +99,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             mActiveConnection = null;
             gatt.close();
         }
+        mConnected = newState==BluetoothAdapter.STATE_CONNECTED;
     }
 
     @Override
@@ -106,6 +108,8 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
         DeviceParameters parameters = getClass().getAnnotation(DeviceParameters.class);
         if (parameters == null) throw new RuntimeException("Device must have DeviceParameters annotation.");
+
+        mCharacteristics.clear();
 
         try {
             Stream.of(parameters.characteristics()).forEach((characteristic) -> {
@@ -243,5 +247,9 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public void removeNotificationListener(int i, NotificationCallback notifyCallback) {
         Characteristic c = getCharacteristic(i);
         if (c != null) c.removeCallback(notifyCallback);
+    }
+
+    public boolean isActuallyConnected() {
+        return mConnected;
     }
 }

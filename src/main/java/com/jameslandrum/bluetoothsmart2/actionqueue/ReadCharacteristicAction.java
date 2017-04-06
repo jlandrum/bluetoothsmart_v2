@@ -37,7 +37,7 @@ final class ReadCharacteristicAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates(this::onDeviceUpdateEvent);
+            device.subscribeToUpdates(mListener);
 
             try {
                 Characteristic characteristic = device.getCharacteristic(mCharId);
@@ -49,11 +49,11 @@ final class ReadCharacteristicAction extends Action {
             }
         }
 
-        device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
+        device.unsubscribeToUpdates(mListener);
         return getResult();
     }
 
-    private void onDeviceUpdateEvent(int action) {
+    private final DeviceUpdateListener mListener = (action) -> {
         switch (action) {
             case SmartDevice.EVENT_SECURITY_FAILURE:
                 setResult(Result.BONDING_REQUIRED);
@@ -71,8 +71,7 @@ final class ReadCharacteristicAction extends Action {
             default:
                 break;
         }
-    }
-
+    };
 
     @Override
     public boolean purge() {
