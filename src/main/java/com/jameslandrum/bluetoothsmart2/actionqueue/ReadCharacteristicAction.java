@@ -19,6 +19,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
+import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class ReadCharacteristicAction extends Action {
@@ -36,25 +37,7 @@ final class ReadCharacteristicAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates((event)-> {
-                switch (event) {
-                    case SmartDevice.EVENT_SECURITY_FAILURE:
-                        setResult(Result.BONDING_REQUIRED);
-                        finish();
-                        break;
-                    case SmartDevice.EVENT_CHARACTERISTIC_READ_FAILURE:
-                    case SmartDevice.EVENT_CONNECTION_ERROR:
-                        setResult(Result.FAILED);
-                        finish();
-                        break;
-                    case SmartDevice.EVENT_CHARACTERISTIC_READ:
-                        setResult(Result.OK);
-                        finish();
-                        break;
-                    default:
-                        break;
-                }
-            });
+            device.subscribeToUpdates(this::onDeviceUpdateEvent);
 
             try {
                 Characteristic characteristic = device.getCharacteristic(mCharId);
@@ -66,8 +49,30 @@ final class ReadCharacteristicAction extends Action {
             }
         }
 
+        device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
         return getResult();
     }
+
+    private void onDeviceUpdateEvent(int action) {
+        switch (action) {
+            case SmartDevice.EVENT_SECURITY_FAILURE:
+                setResult(Result.BONDING_REQUIRED);
+                finish();
+                break;
+            case SmartDevice.EVENT_CHARACTERISTIC_READ_FAILURE:
+            case SmartDevice.EVENT_CONNECTION_ERROR:
+                setResult(Result.FAILED);
+                finish();
+                break;
+            case SmartDevice.EVENT_CHARACTERISTIC_READ:
+                setResult(Result.OK);
+                finish();
+                break;
+            default:
+                break;
+        }
+    }
+
 
     @Override
     public boolean purge() {

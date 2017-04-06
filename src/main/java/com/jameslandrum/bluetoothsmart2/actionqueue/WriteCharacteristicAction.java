@@ -19,6 +19,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 import android.bluetooth.BluetoothGattCharacteristic;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
+import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class WriteCharacteristicAction extends Action {
@@ -40,7 +41,7 @@ final class WriteCharacteristicAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates(mListener);
+            device.subscribeToUpdates(this::onDeviceUpdateEvent);
 
             try {
                 Characteristic characteristic = device.getCharacteristic(mCharId);
@@ -48,23 +49,27 @@ final class WriteCharacteristicAction extends Action {
                 gattCharacteristic.setValue(mData);
                 if (mWriteMode != -1) gattCharacteristic.setWriteType(mWriteMode);
                 device.getActiveConnection().writeCharacteristic(gattCharacteristic);
+                Logging.notice("Write sent with type %d.", mWriteMode);
                 waitForFinish(mTimeout);
             } catch (Exception e) {
+                Logging.notice("Write error: %s", e.getMessage());
+                e.printStackTrace();
                 setResult(Result.UNKNOWN);
             }
 
-            device.unsubscribeToUpdates(mListener);
+            device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
         }
 
         return getResult();
     }
 
-    private DeviceUpdateListener mListener = (event) -> {
-        switch (event) {
+    private void onDeviceUpdateEvent(int action) {
+        switch (action) {
             case SmartDevice.EVENT_SECURITY_FAILURE:
                 setResult(Result.BONDING_REQUIRED);
                 finish();
                 break;
+            case SmartDevice.EVENT_CHARACTERISTIC_WRITE_FAILURE:
             case SmartDevice.EVENT_CONNECTION_ERROR:
                 setResult(Result.FAILED);
                 finish();
@@ -75,7 +80,7 @@ final class WriteCharacteristicAction extends Action {
             default:
                 break;
         }
-    };
+    }
 
     @Override
     public boolean purge() {

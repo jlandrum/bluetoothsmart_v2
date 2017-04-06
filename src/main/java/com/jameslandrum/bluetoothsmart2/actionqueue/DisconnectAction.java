@@ -17,6 +17,7 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.support.annotation.Nullable;
+import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
@@ -32,29 +33,32 @@ final class DisconnectAction extends Action {
         if (!device.isConnected()) {
             setResult(Result.OK);
         } else {
-            device.subscribeToUpdates((event) -> {
-                switch (event) {
-                    case SmartDevice.EVENT_DISCONNECTED:
-                        setResult(Result.OK);
-                        finish();
-                        break;
-                    case SmartDevice.EVENT_CONNECTION_ERROR:
-                        setResult(Result.FAILED);
-                        finish();
-                        break;
-                    default:
-                        break;
-                }
-            });
+            device.subscribeToUpdates(this::onDeviceUpdateEvent);
             device.disconnect();
             waitForFinish();
         }
 
+        device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
         return getResult();
     }
 
     @Override
     public boolean purge() {
         return true;
+    }
+
+    private void onDeviceUpdateEvent(int action) {
+        switch (action) {
+            case SmartDevice.EVENT_DISCONNECTED:
+                setResult(Result.OK);
+                finish();
+                break;
+            case SmartDevice.EVENT_CONNECTION_ERROR:
+                setResult(Result.FAILED);
+                finish();
+                break;
+            default:
+                break;
+        }
     }
 }

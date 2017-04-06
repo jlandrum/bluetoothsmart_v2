@@ -18,6 +18,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
+import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class ConnectAction extends Action {
@@ -33,30 +34,33 @@ final class ConnectAction extends Action {
         if (device.isConnected()) {
             setResult(Result.OK);
         } else {
-            device.subscribeToUpdates((event) -> {
-                switch (event) {
-                    case SmartDevice.EVENT_DISCONNECTED:
-                    case SmartDevice.EVENT_CONNECTION_ERROR:
-                        setResult(Result.FAILED);
-                        finish();
-                        break;
-                    case SmartDevice.EVENT_SERVICES_DISCOVERED:
-                        setResult(Result.OK);
-                        finish();
-                        break;
-                    default:
-                        break;
-                }
-            });
+            device.subscribeToUpdates(this::onDeviceUpdateEvent);
             device.connect(mContext);
             waitForFinish();
         }
 
+        device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
         return getResult();
     }
 
     @Override
     public boolean purge() {
         return true;
+    }
+
+    private void onDeviceUpdateEvent(int action) {
+        switch (action) {
+            case SmartDevice.EVENT_DISCONNECTED:
+            case SmartDevice.EVENT_CONNECTION_ERROR:
+                setResult(Result.FAILED);
+                finish();
+                break;
+            case SmartDevice.EVENT_SERVICES_DISCOVERED:
+                setResult(Result.OK);
+                finish();
+                break;
+            default:
+                break;
+        }
     }
 }

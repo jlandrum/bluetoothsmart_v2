@@ -87,7 +87,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             mActiveConnection = gatt;
             mActiveConnection.discoverServices();
             Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CONNECTED));
-        } else if (newState == BluetoothAdapter.STATE_DISCONNECTED) {
+        } else {
             Logging.notice("Device %s disconnected.", this.getClass().getSimpleName());
             Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_DISCONNECTED));
             mActiveConnection = null;
@@ -130,6 +130,8 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     @Override
     @SuppressWarnings("Duplicates")
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+        Logging.notice("Write result: %d", status);
+
         switch (status) {
             case BluetoothGatt.GATT_SUCCESS:
                 Stream.of(mListeners).forEach(l->l.onDeviceUpdateEvent(EVENT_CHARACTERISTIC_WRITTEN));

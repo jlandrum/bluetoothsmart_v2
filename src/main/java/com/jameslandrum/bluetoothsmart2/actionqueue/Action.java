@@ -35,6 +35,14 @@ public abstract class Action {
         mResult = result;
     }
 
+    void hold(int i) {
+        synchronized (mLock) {
+            try {
+                mLock.wait(i);
+            } catch (InterruptedException ignored) {}
+        }
+    }
+
     void finish() {
         synchronized (mLock) {
             mLock.notify();
