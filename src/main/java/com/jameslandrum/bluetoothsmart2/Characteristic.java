@@ -17,13 +17,21 @@
 package com.jameslandrum.bluetoothsmart2;
 
 import android.bluetooth.BluetoothGattCharacteristic;
+import com.annimon.stream.Stream;
+import com.jameslandrum.bluetoothsmart2.actionqueue.NotificationCallback;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Characteristic {
     private BluetoothGattCharacteristic mCharacteristic;
+    private int mIdentifier;
+    private final ConcurrentLinkedQueue<NotificationCallback> mChangeCallbacks = new ConcurrentLinkedQueue<>();
 
-    Characteristic(BluetoothGattCharacteristic nativeChar) {
+    Characteristic(BluetoothGattCharacteristic nativeChar, int identifier) {
         mCharacteristic = nativeChar;
+        mIdentifier = identifier;
     }
+
     public BluetoothGattCharacteristic getNativeCharacteristic() {
         return mCharacteristic;
     }
@@ -31,5 +39,25 @@ public class Characteristic {
     public byte[] getValue() {
         if (mCharacteristic != null) return mCharacteristic.getValue();
         return null;
+    }
+
+    public int getId() {
+        return mIdentifier;
+    }
+
+    void addCallback(NotificationCallback callback) {
+        if (!mChangeCallbacks.contains(callback)) mChangeCallbacks.add(callback);
+    }
+
+    void removeCallback(NotificationCallback callback) {
+        mChangeCallbacks.remove(callback);
+    }
+
+    void notifyUpdate() {
+        Stream.of(mChangeCallbacks).forEach(NotificationCallback::onCharacteristicChange);
+    }
+
+    void clearAllCallbacks() {
+        mChangeCallbacks.clear();
     }
 }

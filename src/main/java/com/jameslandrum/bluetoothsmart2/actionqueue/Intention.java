@@ -117,6 +117,42 @@ public final class Intention {
         }
 
         /**
+         * Registers a callback for characteristic notifications.
+         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param timeout How long before the action should be cancelled and a timeout error thrown.
+         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
+         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
+         * @param resultHandler An optional handler to be called once the action completes or fails.
+         * @param callback the callback to add for notifications.
+         * @return The builder.
+         */
+        @Sequential
+        public Builder registerForNotifications(int characteristicId, int timeout,
+                                                @Nullable ResultHandler resultHandler, NotificationCallback callback) {
+            mIntentions.mActions.add(new SetNotificationAction(characteristicId, timeout, 0,
+                    true, resultHandler, callback));
+            return this;
+        }
+
+        /**
+         * Unregisters a callback for characteristic notifications.
+         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param timeout How long before the action should be cancelled and a timeout error thrown.
+         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
+         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
+         * @param resultHandler An optional handler to be called once the action completes or fails.
+         * @param callback the callback to remove from notifications.
+         * @return The builder.
+         */
+        @Sequential
+        public Builder unregisterForNotifications(int characteristicId, int timeout,
+                                                @Nullable ResultHandler resultHandler, NotificationCallback callback) {
+            mIntentions.mActions.add(new SetNotificationAction(characteristicId, timeout, 0,
+                    false, resultHandler, callback));
+            return this;
+        }
+
+        /**
          * Disconnects from the target device.
          * @return The builder.
          */

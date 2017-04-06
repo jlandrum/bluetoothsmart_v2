@@ -17,42 +17,43 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
-import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
-final class WriteCharacteristicAction extends Action {
+final class SetNotificationAction extends Action {
     private final int mCharId;
-    private final byte[] mData;
-    private final int mWriteMode;
+    private final NotificationCallback mNotifyCallback;
     private final int mTimeout;
+    private final int mDescriptorId;
+    private final boolean mEnable;
 
-    WriteCharacteristicAction(int characteristicId, int timeout, ResultHandler handler, int writeMode, byte[] data) {
+    SetNotificationAction(int characteristicId, int timeout, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
         super(handler);
         mCharId = characteristicId;
-        mData = data;
-        mWriteMode = writeMode;
+        mNotifyCallback = subscription;
         mTimeout = timeout;
+        mDescriptorId = descriptorId;
+        mEnable = enable;
     }
 
     @Override
     public Result execute(SmartDevice device) {
+        Characteristic characteristic = null;
+
         if (!device.isConnected()) {
             setResult(Result.NOT_READY);
         } else {
             device.subscribeToUpdates(this::onDeviceUpdateEvent);
-
             try {
-                Characteristic characteristic = device.getCharacteristic(mCharId);
+                characteristic = device.getCharacteristic(mCharId);
                 BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
-                gattCharacteristic.setValue(mData);
-                if (mWriteMode != -1) gattCharacteristic.setWriteType(mWriteMode);
-                device.getActiveConnection().writeCharacteristic(gattCharacteristic);
-                Logging.notice("Write sent with type %d.", mWriteMode);
+                BluetoothGattDescriptor descriptor = gattCharacteristic.getDescriptors().get(mDescriptorId);
+                descriptor.setValue( mEnable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE );
+                device.getActiveConnection().writeDescriptor(descriptor);
                 waitForFinish(mTimeout);
             } catch (Exception e) {
-                Logging.notice("Write error: %s", e.getMessage());
                 e.printStackTrace();
                 setResult(Result.UNKNOWN);
             }
@@ -60,15 +61,23 @@ final class WriteCharacteristicAction extends Action {
             device.unsubscribeToUpdates(this::onDeviceUpdateEvent);
         }
 
-        return getResult();
+        Result result = getResult();
+        if (result == Result.OK && characteristic != null) {
+            device.getActiveConnection().setCharacteristicNotification(characteristic.getNativeCharacteristic(), mEnable);
+            if (mEnable) {
+                device.addNotificationListener(mCharId, mNotifyCallback);
+            } else {
+                device.removeNotificationListener(mCharId, mNotifyCallback);
+            }
+        } else {
+            setResult(Result.FAILED);
+        }
+
+        return result;
     }
 
     private void onDeviceUpdateEvent(int action) {
         switch (action) {
-            case SmartDevice.EVENT_SECURITY_FAILURE:
-                setResult(Result.BONDING_REQUIRED);
-                finish();
-                break;
             case SmartDevice.EVENT_CHARACTERISTIC_WRITE_FAILURE:
             case SmartDevice.EVENT_CONNECTION_ERROR:
                 setResult(Result.FAILED);
