@@ -90,6 +90,7 @@ public abstract class DeviceScanner {
 
     public void addIdentifier(Identifier identifier) {
         mIdentifiers.add(identifier);
+        mInvalidDevices.clear();
     }
 
     @SuppressWarnings("RedundantIfStatement")
@@ -97,8 +98,7 @@ public abstract class DeviceScanner {
         if (mInvalidDevices.contains(device.getAddress())) return;
 
         boolean isBeacon = data[5] == APPLE_PREFIX[0] &&
-                            data[6] == APPLE_PREFIX[1] &&
-                            data[7] == APPLE_PREFIX[2];
+                            data[6] == APPLE_PREFIX[1];
 
         if (mDevices.containsKey(device.getAddress())) {
             SmartDevice target = mDevices.get(device.getAddress());

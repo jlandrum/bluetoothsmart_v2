@@ -28,6 +28,8 @@ import android.util.Log;
 import com.annimon.stream.Collectors;
 import com.annimon.stream.Stream;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -39,9 +41,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class LollipopDeviceScanner extends DeviceScanner {
     private BluetoothAdapter mAdapter = BluetoothAdapter.getDefaultAdapter();
     private BluetoothLeScanner mScanner;
-    private Thread mProcessorThread;
-    private final Object mLock = new Object();
-    private ConcurrentSkipListMap<String, ScanResult> mAdsToProcess = new ConcurrentSkipListMap<>();
+    private HashMap<String, List<UUID>> mUuidMap = new HashMap<>();
     private boolean mIsScanning;
 
     @Override
@@ -56,32 +56,6 @@ public class LollipopDeviceScanner extends DeviceScanner {
             mScanner.startScan(null, settings.build(), callback);
             mIsScanning = true;
         }
-        mProcessorThread = new Thread(() -> {
-            while (!mProcessorThread.isInterrupted()) {
-                if (mAdsToProcess.size() == 0) try {
-                    synchronized (mLock) {
-                        Log.i("Processing Ad", "Waiting for Ad");
-                        mLock.wait();
-                    }
-                } catch (InterruptedException ignored) {
-                    break;
-                }
-
-                try {
-                    ScanResult result = mAdsToProcess.firstEntry().getValue();
-                    mAdsToProcess.remove(mAdsToProcess.firstEntry().getKey());
-                    if (result.getScanRecord() != null) {
-
-                        List<UUID> uuids = Stream.of(result.getScanRecord().getServiceUuids())
-                                .map(ParcelUuid::getUuid)
-                                .collect(Collectors.toList());
-
-                        processAdvertisement(result.getScanRecord().getBytes(), result.getDevice(), uuids, result.getRssi());
-                    }
-                } catch (Exception ignored) {}
-            }
-        });
-        mProcessorThread.start();
     }
 
     @Override
@@ -89,7 +63,6 @@ public class LollipopDeviceScanner extends DeviceScanner {
         if (mScanner != null && mAdapter.isEnabled()) {
             mScanner.stopScan(callback);
             mIsScanning = false;
-            mProcessorThread.interrupt();
         }
     }
 
@@ -101,14 +74,25 @@ public class LollipopDeviceScanner extends DeviceScanner {
     private ScanCallback callback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, final ScanResult result) {
-            if (result.getScanRecord() != null) {
-                if (mAdsToProcess.containsKey(result.getDevice().getAddress())) {
-                    mAdsToProcess.remove(result.getDevice().getAddress());
+            try {
+                if (result.getScanRecord() != null) {
+                    List<UUID> uuids = mUuidMap.get(result.getDevice().getAddress());
+
+                    if (uuids == null) {
+                        if (result.getScanRecord().getServiceUuids() != null) {
+                            uuids = Stream.of(result.getScanRecord().getServiceUuids())
+                                    .map(ParcelUuid::getUuid)
+                                    .collect(Collectors.toList());
+                        } else {
+                            uuids = new ArrayList<>();
+                        }
+                        mUuidMap.put(result.getDevice().getAddress(), uuids);
+                    }
+
+                    processAdvertisement(result.getScanRecord().getBytes(), result.getDevice(), uuids, result.getRssi());
                 }
-                mAdsToProcess.put(result.getDevice().getAddress(), result);
-                synchronized (mLock) {
-                    mLock.notify();
-                }
+            } catch (Exception ignored) {
+                ignored.printStackTrace();
             }
         }
 
