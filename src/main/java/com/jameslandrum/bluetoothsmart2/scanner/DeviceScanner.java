@@ -96,7 +96,9 @@ public abstract class DeviceScanner {
     void processAdvertisement(byte[] data, BluetoothDevice device, List<UUID> uuids, int rssi) {
         if (mInvalidDevices.contains(device.getAddress())) return;
 
-        boolean isBeacon = Arrays.equals(Arrays.copyOfRange(data, 5, 7), APPLE_PREFIX);
+        boolean isBeacon = data[5] == APPLE_PREFIX[0] &&
+                            data[6] == APPLE_PREFIX[1] &&
+                            data[7] == APPLE_PREFIX[2];
 
         if (mDevices.containsKey(device.getAddress())) {
             SmartDevice target = mDevices.get(device.getAddress());
@@ -130,6 +132,8 @@ public abstract class DeviceScanner {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            } else {
+                mInvalidDevices.add(device.getAddress());
             }
         }
 
