@@ -17,7 +17,7 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
-import com.jameslandrum.bluetoothsmart2.Utils;
+import com.jameslandrum.bluetoothsmart2.UUID2;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -63,7 +63,7 @@ public final class Identifier {
 
         @SuppressWarnings("SameParameterValue")
         public Builder uuid(String uuid) {
-            identifier.mUuids.add(Utils.uuidFromString(uuid));
+            identifier.mUuids.add(new UUID2(uuid).getUuid());
             return this;
         }
 
