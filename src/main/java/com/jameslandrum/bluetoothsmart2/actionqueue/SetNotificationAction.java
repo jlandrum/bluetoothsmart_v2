@@ -18,7 +18,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
-import com.jameslandrum.bluetoothsmart2.Characteristic;
+import com.jameslandrum.bluetoothsmart2.DEPRECATED_Characteristic;
 import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
@@ -40,7 +40,7 @@ final class SetNotificationAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        Characteristic characteristic = null;
+        DEPRECATED_Characteristic characteristic = null;
 
         if (!device.isReady()) {
             setResult(Result.NOT_READY);

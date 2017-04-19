@@ -18,7 +18,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
-import com.jameslandrum.bluetoothsmart2.Characteristic;
+import com.jameslandrum.bluetoothsmart2.DEPRECATED_Characteristic;
 import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
@@ -40,7 +40,7 @@ final class ReadCharacteristicAction extends Action {
             device.subscribeToUpdates(mListener);
 
             try {
-                Characteristic characteristic = device.getCharacteristic(mCharId);
+                DEPRECATED_Characteristic characteristic = device.getCharacteristic(mCharId);
                 BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
                 device.getActiveConnection().readCharacteristic(gattCharacteristic);
                 waitForFinish(mWait);
