@@ -17,20 +17,17 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
-import com.jameslandrum.bluetoothsmart2.DEPRECATED_Characteristic;
-import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
-import com.jameslandrum.bluetoothsmart2.Logging;
-import com.jameslandrum.bluetoothsmart2.SmartDevice;
+import com.jameslandrum.bluetoothsmart2.*;
 
 final class WriteCharacteristicAction extends Action {
-    private final int mCharId;
+    private final Characteristic mCharacteristic;
     private final byte[] mData;
     private final int mWriteMode;
     private final int mTimeout;
 
-    WriteCharacteristicAction(int characteristicId, int timeout, ResultHandler handler, int writeMode, byte[] data) {
+    WriteCharacteristicAction(Characteristic characteristic, int timeout, ResultHandler handler, int writeMode, byte[] data) {
         super(handler);
-        mCharId = characteristicId;
+        mCharacteristic = characteristic;
         mData = data;
         mWriteMode = writeMode;
         mTimeout = timeout;
@@ -44,8 +41,7 @@ final class WriteCharacteristicAction extends Action {
             device.subscribeToUpdates(mListener);
 
             try {
-                DEPRECATED_Characteristic characteristic = device.getCharacteristic(mCharId);
-                BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
+                BluetoothGattCharacteristic gattCharacteristic = mCharacteristic.getNativeCharacteristic();
                 gattCharacteristic.setValue(mData);
                 if (mWriteMode != -1) gattCharacteristic.setWriteType(mWriteMode);
                 device.getActiveConnection().writeCharacteristic(gattCharacteristic);

@@ -3,11 +3,15 @@ package com.jameslandrum.bluetoothsmart2;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import com.jameslandrum.bluetoothsmart2.actionqueue.NotificationCallback;
 
+import java.util.HashSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Characteristic {
     private BluetoothGattCharacteristic mCharacteristic;
+    private ConcurrentLinkedQueue<NotificationCallback> mCallbacks;
 
     private UUID mService;
     private UUID mHandle;
@@ -58,5 +62,17 @@ public class Characteristic {
     }
 
     void notifyUpdate() {
+    }
+
+    public BluetoothGattCharacteristic getNativeCharacteristic() {
+        return mCharacteristic;
+    }
+
+    public void addNotificationListener(NotificationCallback notificationCallback) {
+        if (!mCallbacks.contains(notificationCallback)) mCallbacks.add(notificationCallback);
+    }
+
+    public void removeNotificationListener(NotificationCallback notificationCallback) {
+        mCallbacks.remove(notificationCallback);
     }
 }

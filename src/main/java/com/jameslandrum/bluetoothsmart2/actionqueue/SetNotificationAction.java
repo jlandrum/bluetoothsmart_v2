@@ -18,20 +18,20 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
-import com.jameslandrum.bluetoothsmart2.DEPRECATED_Characteristic;
+import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class SetNotificationAction extends Action {
-    private final int mCharId;
+    private final Characteristic mCharacteristic;
     private final NotificationCallback mNotifyCallback;
     private final int mTimeout;
     private final int mDescriptorId;
     private final boolean mEnable;
 
-    SetNotificationAction(int characteristicId, int timeout, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
+    SetNotificationAction(Characteristic characteristic, int timeout, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
         super(handler);
-        mCharId = characteristicId;
+        mCharacteristic = characteristic;
         mNotifyCallback = subscription;
         mTimeout = timeout;
         mDescriptorId = descriptorId;
@@ -40,35 +40,28 @@ final class SetNotificationAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        DEPRECATED_Characteristic characteristic = null;
-
-        if (!device.isReady()) {
+        BluetoothGattCharacteristic characteristic = mCharacteristic.getNativeCharacteristic();
+        if (!device.isReady() || !mCharacteristic.isReady()) {
             setResult(Result.NOT_READY);
         } else {
             device.subscribeToUpdates(mListener);
-            try {
-                characteristic = device.getCharacteristic(mCharId);
-                BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
-                BluetoothGattDescriptor descriptor = gattCharacteristic.getDescriptors().get(mDescriptorId);
-                descriptor.setValue( mEnable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE );
-                device.getActiveConnection().writeDescriptor(descriptor);
-                waitForFinish(mTimeout);
-            } catch (Exception e) {
-                e.printStackTrace();
-                setResult(Result.UNKNOWN);
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptors().get(mDescriptorId);
+            descriptor.setValue( mEnable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE );
+            device.getActiveConnection().writeDescriptor(descriptor);
+            waitForFinish(mTimeout);
+            device.unsubscribeToUpdates(mListener);
+
+            device.getActiveConnection().setCharacteristicNotification(characteristic, mEnable);
+            if (mEnable) {
+                mCharacteristic.addNotificationListener(mNotifyCallback);
+            } else {
+                mCharacteristic.removeNotificationListener(mNotifyCallback);
             }
 
-            device.unsubscribeToUpdates(mListener);
         }
 
         Result result = getResult();
         if (result == Result.OK && characteristic != null) {
-            device.getActiveConnection().setCharacteristicNotification(characteristic.getNativeCharacteristic(), mEnable);
-            if (mEnable) {
-                device.addNotificationListener(mCharId, mNotifyCallback);
-            } else {
-                device.removeNotificationListener(mCharId, mNotifyCallback);
-            }
         } else {
             setResult(Result.FAILED);
         }

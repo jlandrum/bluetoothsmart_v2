@@ -16,37 +16,31 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
-import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
-import com.jameslandrum.bluetoothsmart2.DEPRECATED_Characteristic;
+import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class ReadCharacteristicAction extends Action {
-    private final int mCharId;
+    private Characteristic mCharacteristic;
     private final int mWait;
 
-    ReadCharacteristicAction(int characteristicId, int wait, @Nullable ResultHandler handler) {
+    ReadCharacteristicAction(Characteristic characteristic, int wait, @Nullable ResultHandler handler) {
         super(handler);
-        mCharId = characteristicId;
+        mCharacteristic = characteristic;
         mWait = wait;
     }
 
     @Override
     public Result execute(SmartDevice device) {
-        if (!device.isReady()) {
+        if (!device.isReady() || !mCharacteristic.isReady()) {
             setResult(Result.NOT_READY);
         } else {
             device.subscribeToUpdates(mListener);
 
-            try {
-                DEPRECATED_Characteristic characteristic = device.getCharacteristic(mCharId);
-                BluetoothGattCharacteristic gattCharacteristic = characteristic.getNativeCharacteristic();
-                device.getActiveConnection().readCharacteristic(gattCharacteristic);
-                waitForFinish(mWait);
-            } catch (Exception e) {
-                setResult(Result.UNKNOWN);
-            }
+            device.getActiveConnection().readCharacteristic(mCharacteristic.getNativeCharacteristic());
+            waitForFinish(mWait);
+            setResult(Result.UNKNOWN);
         }
 
         device.unsubscribeToUpdates(mListener);

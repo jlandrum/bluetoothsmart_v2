@@ -18,6 +18,7 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
+import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.SmartDeviceManager;
 import com.jameslandrum.bluetoothsmart2.annotations.Sequential;
 
@@ -68,7 +69,7 @@ public final class Intention {
         /**
          * Changes the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
-         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param characteristic The characteristic to update.
          * @param timeout How long before the action should be cancelled and a timeout error thrown.
          *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
          *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
@@ -78,14 +79,14 @@ public final class Intention {
          */
         @SuppressWarnings("SameParameterValue")
         @Sequential
-        public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler, byte ... data) {
-            return changeCharacteristic(characteristicId, timeout, resultHandler, -1, data);
+        public Builder changeCharacteristic(Characteristic characteristic, int timeout, @Nullable ResultHandler resultHandler, byte ... data) {
+            return changeCharacteristic(characteristic, timeout, resultHandler, -1, data);
         }
 
         /**
          * Changes the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
-         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param characteristic The characteristic to update.
          * @param timeout How long before the action should be cancelled and a timeout error thrown.
          *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
          *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
@@ -95,15 +96,15 @@ public final class Intention {
          * @return The builder.
          */
         @Sequential
-        public Builder changeCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler, int writeMode, byte ... data) {
-            mIntentions.mActions.add(new WriteCharacteristicAction(characteristicId, timeout, resultHandler, writeMode, data));
+        public Builder changeCharacteristic(Characteristic characteristic, int timeout, @Nullable ResultHandler resultHandler, int writeMode, byte ... data) {
+            mIntentions.mActions.add(new WriteCharacteristicAction(characteristic, timeout, resultHandler, writeMode, data));
             return this;
         }
 
         /**
          * Reads the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
-         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param characteristic The characteristic to read.
          * @param timeout How long before the action should be cancelled and a timeout error thrown.
          *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
          *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
@@ -111,14 +112,14 @@ public final class Intention {
          * @return The builder.
          */
         @Sequential
-        public Builder readCharacteristic(int characteristicId, int timeout, @Nullable ResultHandler resultHandler) {
-            mIntentions.mActions.add(new ReadCharacteristicAction(characteristicId, timeout, resultHandler));
+        public Builder readCharacteristic(Characteristic characteristic, int timeout, @Nullable ResultHandler resultHandler) {
+            mIntentions.mActions.add(new ReadCharacteristicAction(characteristic, timeout, resultHandler));
             return this;
         }
 
         /**
          * Registers a callback for characteristic notifications.
-         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param characteristic The characteristic to watch.
          * @param timeout How long before the action should be cancelled and a timeout error thrown.
          *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
          *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
@@ -127,16 +128,16 @@ public final class Intention {
          * @return The builder.
          */
         @Sequential
-        public Builder registerForNotifications(int characteristicId, int timeout,
+        public Builder registerForNotifications(Characteristic characteristic, int timeout,
                                                 @Nullable ResultHandler resultHandler, NotificationCallback callback) {
-            mIntentions.mActions.add(new SetNotificationAction(characteristicId, timeout, 0,
+            mIntentions.mActions.add(new SetNotificationAction(characteristic, timeout, 0,
                     true, resultHandler, callback));
             return this;
         }
 
         /**
          * Unregisters a callback for characteristic notifications.
-         * @param characteristicId The identifier for the characteristic, defined by @DeviceParameters
+         * @param characteristic The characteristic to update.
          * @param timeout How long before the action should be cancelled and a timeout error thrown.
          *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
          *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
@@ -145,9 +146,9 @@ public final class Intention {
          * @return The builder.
          */
         @Sequential
-        public Builder unregisterForNotifications(int characteristicId, int timeout,
+        public Builder unregisterForNotifications(Characteristic characteristic, int timeout,
                                                 @Nullable ResultHandler resultHandler, NotificationCallback callback) {
-            mIntentions.mActions.add(new SetNotificationAction(characteristicId, timeout, 0,
+            mIntentions.mActions.add(new SetNotificationAction(characteristic, timeout, 0,
                     false, resultHandler, callback));
             return this;
         }
