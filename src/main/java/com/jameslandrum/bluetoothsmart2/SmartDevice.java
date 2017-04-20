@@ -65,13 +65,13 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         mDevice = device;
     }
 
-    public void registerCharacteristics(Characteristic ... characteristics) {
+    final public void registerCharacteristics(Characteristic ... characteristics) {
         if (isConnected()) throw new RuntimeException("Cannot modify characteristics of connected device.");
         mCharacteristics.clear();
         Collections.addAll(mCharacteristics, characteristics);
     }
 
-    public BluetoothGatt getActiveConnection() {
+    final public BluetoothGatt getActiveConnection() {
         return mActiveConnection;
     }
 

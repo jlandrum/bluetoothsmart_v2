@@ -27,8 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 
 @SuppressWarnings("ALL")
-public class SmartDeviceManager {
-    private static SmartDeviceManager mManager;
+public enum SmartDeviceManager {
+    INSTANCE;
 
     private int mActiveMode = DeviceScanner.SCAN_MODE_LOW_LATENCY;
     private int mActiveBatchInterval = 0;
@@ -36,25 +36,12 @@ public class SmartDeviceManager {
     private int mYieldBatchInterval = 15000;
     private boolean mIsForeground = true;
     private boolean mIsRunning = false;
-    private DeviceScanner mScanner;
+    private DeviceScanner mScanner = DeviceScanner.getInstance();
     private static WeakReference<Application> mActiveContext;
 
     public static SmartDeviceManager getInstance()
     {
-        if (mManager == null)
-        {
-            throw new RuntimeException("Must call SmartDeviceManager.init() to initialize device manager.");
-        }
-        return mManager;
-    }
-
-    public static void init()
-    {
-        if (mManager == null)
-        {
-            mManager = new SmartDeviceManager();
-            mManager.mScanner = DeviceScanner.getInstance();
-        }
+        return INSTANCE;
     }
 
     public static void setActiveContext(Application activeContext) {
