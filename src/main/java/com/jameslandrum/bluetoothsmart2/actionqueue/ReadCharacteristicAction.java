@@ -18,17 +18,16 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
-import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
+import com.jameslandrum.bluetoothsmart2.CharacteristicCallback;
+import com.jameslandrum.bluetoothsmart2.SmartDeviceCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 final class ReadCharacteristicAction extends Action {
     private Characteristic mCharacteristic;
-    private final int mWait;
 
-    ReadCharacteristicAction(Characteristic characteristic, int wait, @Nullable ResultHandler handler) {
+    ReadCharacteristicAction(Characteristic characteristic, @Nullable ResultHandler handler) {
         super(handler);
         mCharacteristic = characteristic;
-        mWait = wait;
     }
 
     @Override
@@ -36,29 +35,28 @@ final class ReadCharacteristicAction extends Action {
         if (!device.isReady() || !mCharacteristic.isReady()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates(mListener);
+            mCharacteristic.addCallback(mListener);
 
             device.getActiveConnection().readCharacteristic(mCharacteristic.getNativeCharacteristic());
-            waitForFinish(mWait);
+            waitForFinish(mCharacteristic.getTimeout());
             setResult(Result.UNKNOWN);
         }
 
-        device.unsubscribeToUpdates(mListener);
+        mCharacteristic.removeCallback(mListener);
         return getResult();
     }
 
-    private final DeviceUpdateListener mListener = (action) -> {
+    private final CharacteristicCallback mListener = (action) -> {
         switch (action) {
-            case SmartDevice.EVENT_SECURITY_FAILURE:
+            case CharacteristicCallback.EVENT_SECURITY_FAILURE:
                 setResult(Result.BONDING_REQUIRED);
                 finish();
                 break;
-            case SmartDevice.EVENT_CHARACTERISTIC_READ_FAILURE:
-            case SmartDevice.EVENT_CONNECTION_ERROR:
+            case CharacteristicCallback.EVENT_CHARACTERISTIC_READ_FAILURE:
                 setResult(Result.FAILED);
                 finish();
                 break;
-            case SmartDevice.EVENT_CHARACTERISTIC_READ:
+            case CharacteristicCallback.EVENT_CHARACTERISTIC_READ:
                 setResult(Result.OK);
                 finish();
                 break;

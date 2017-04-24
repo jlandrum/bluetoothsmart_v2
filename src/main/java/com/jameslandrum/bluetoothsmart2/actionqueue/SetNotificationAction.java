@@ -18,22 +18,18 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
-import com.jameslandrum.bluetoothsmart2.Characteristic;
-import com.jameslandrum.bluetoothsmart2.DeviceUpdateListener;
-import com.jameslandrum.bluetoothsmart2.SmartDevice;
+import com.jameslandrum.bluetoothsmart2.*;
 
 final class SetNotificationAction extends Action {
     private final Characteristic mCharacteristic;
     private final NotificationCallback mNotifyCallback;
-    private final int mTimeout;
     private final int mDescriptorId;
     private final boolean mEnable;
 
-    SetNotificationAction(Characteristic characteristic, int timeout, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
+    SetNotificationAction(Characteristic characteristic, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
         super(handler);
         mCharacteristic = characteristic;
         mNotifyCallback = subscription;
-        mTimeout = timeout;
         mDescriptorId = descriptorId;
         mEnable = enable;
     }
@@ -44,12 +40,12 @@ final class SetNotificationAction extends Action {
         if (!device.isReady() || !mCharacteristic.isReady()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates(mListener);
+            mCharacteristic.addCallback(mListener);
             BluetoothGattDescriptor descriptor = characteristic.getDescriptors().get(mDescriptorId);
             descriptor.setValue( mEnable ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE );
             device.getActiveConnection().writeDescriptor(descriptor);
-            waitForFinish(mTimeout);
-            device.unsubscribeToUpdates(mListener);
+            waitForFinish(mCharacteristic.getTimeout());
+            mCharacteristic.addCallback(mListener);
 
             device.getActiveConnection().setCharacteristicNotification(characteristic, mEnable);
             if (mEnable) {
@@ -69,14 +65,13 @@ final class SetNotificationAction extends Action {
         return result;
     }
 
-    private final DeviceUpdateListener mListener = (action) -> {
+    private final CharacteristicCallback mListener = (action) -> {
         switch (action) {
-            case SmartDevice.EVENT_CHARACTERISTIC_WRITE_FAILURE:
-            case SmartDevice.EVENT_CONNECTION_ERROR:
+            case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE_FAILURE:
                 setResult(Result.FAILED);
                 finish();
                 break;
-            case SmartDevice.EVENT_CHARACTERISTIC_WRITTEN:
+            case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE:
                 setResult(Result.OK);
                 finish();
                 break;

@@ -6,7 +6,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class UUID2  {
+final public class UUID2  {
     private static final String     CORE_UUID = "00000000-0000-1000-8000-00805F9B34FB";
     private static final Pattern    PATTERN_FULL = Pattern.compile("[0-F]{8}-[0-F]{4}-[0-F]{4}-[0-F]{4}-[0-F]{12}", Pattern.CASE_INSENSITIVE);
     private static final Pattern    PATTERN_PARTIAL = Pattern.compile("([0-F]{4})?([0-F]{4})(-0{4}-0{4}-0{4}-0{12})?", Pattern.CASE_INSENSITIVE);

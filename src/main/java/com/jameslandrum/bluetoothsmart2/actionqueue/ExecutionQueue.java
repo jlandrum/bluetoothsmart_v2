@@ -19,13 +19,13 @@ package com.jameslandrum.bluetoothsmart2.actionqueue;
 import android.annotation.SuppressLint;
 import com.jameslandrum.bluetoothsmart2.Logging;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
+import com.jameslandrum.bluetoothsmart2.SmartDeviceManager;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Represents a queue for an action to be applied to a connected device
  */
-@SuppressLint("NewApi")
 public final class ExecutionQueue {
     private ConcurrentLinkedQueue<Action> mPendingActions = new ConcurrentLinkedQueue<>();
 

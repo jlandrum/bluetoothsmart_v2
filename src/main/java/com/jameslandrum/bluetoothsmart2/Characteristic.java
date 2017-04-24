@@ -3,20 +3,22 @@ package com.jameslandrum.bluetoothsmart2;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import com.jameslandrum.bluetoothsmart2.actionqueue.NotificationCallback;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Characteristic {
     private BluetoothGattCharacteristic mCharacteristic;
-    private ConcurrentLinkedQueue<NotificationCallback> mCallbacks;
+    private ConcurrentLinkedQueue<NotificationCallback> mNotifications;
+    private ConcurrentLinkedQueue<CharacteristicCallback> mCallbacks;
 
     private UUID mService;
     private UUID mHandle;
+    private int mTimeout = 5000;
+    private int mWriteMode = -1;
 
-    private Characteristic(@Nullable UUID2 service, UUID2 handle) {
+    private Characteristic(@Nullable UUID2 service, @NotNull UUID2 handle, int timeout) {
         if (service == null) Log.w(this.getClass().getCanonicalName(),
                 "Not supplying a service may decrease performance. Use with caution.");
         if (service!=null) mService = service.getUuid();
@@ -24,7 +26,11 @@ public class Characteristic {
     };
 
     public Characteristic(@Nullable String service, String handle) {
-        this(new UUID2(service), new UUID2(service, handle));
+        this(service,handle,5000);
+    }
+
+    public Characteristic(@Nullable String service, String handle, int timeout) {
+        this(new UUID2(service), new UUID2(service, handle), timeout);
     }
 
     @Override
@@ -54,7 +60,7 @@ public class Characteristic {
     }
 
     void clearAllCallbacks() {
-        // TODO: Remove notification listeners
+        mNotifications.clear();
     }
 
     boolean equalsCharacteristic(BluetoothGattCharacteristic characteristic) {
@@ -69,10 +75,35 @@ public class Characteristic {
     }
 
     public void addNotificationListener(NotificationCallback notificationCallback) {
-        if (!mCallbacks.contains(notificationCallback)) mCallbacks.add(notificationCallback);
+        if (!mNotifications.contains(notificationCallback)) mNotifications.add(notificationCallback);
     }
 
     public void removeNotificationListener(NotificationCallback notificationCallback) {
-        mCallbacks.remove(notificationCallback);
+        mNotifications.remove(notificationCallback);
+    }
+
+    public void addCallback(CharacteristicCallback listener) {
+        if (!mCallbacks.contains(listener)) mCallbacks.add(listener);
+    }
+
+    public void removeCallback(CharacteristicCallback listener) {
+        mCallbacks.remove(listener);
+    }
+
+    void callEvent(int event) {
+        for (CharacteristicCallback c : mCallbacks) { c.onEvent(event); }
+    }
+
+    public int getTimeout() {
+        return mTimeout;
+    }
+
+    public int getWriteMode() {
+        return mWriteMode;
+    }
+
+    public byte[] getValue() {
+        if (getNativeCharacteristic() == null) return null;
+        return getNativeCharacteristic().getValue();
     }
 }

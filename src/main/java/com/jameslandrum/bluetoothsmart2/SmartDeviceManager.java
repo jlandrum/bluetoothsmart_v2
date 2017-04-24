@@ -18,12 +18,10 @@ package com.jameslandrum.bluetoothsmart2;
 
 import android.app.Application;
 import android.content.Context;
-import com.annimon.stream.Stream;
 import com.jameslandrum.bluetoothsmart2.actionqueue.Identifier;
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
 
 import java.lang.ref.WeakReference;
-import java.util.Iterator;
 import java.util.List;
 
 @SuppressWarnings("ALL")
@@ -126,9 +124,9 @@ public enum SmartDeviceManager {
     }
 
     public void cleanup(int staleTime) {
-        Stream.of(mScanner.getAllDevices())
-                .filter(d->System.currentTimeMillis()-d.getLastSeen()>staleTime)
-                .forEach(d->mScanner.forgetDevice(d));
+        for (SmartDevice d : mScanner.getAllDevices()) {
+            if (System.currentTimeMillis() - d.getLastSeen() > staleTime) mScanner.forgetDevice(d);
+        }
     }
 
     public SmartDevice getDeviceByMac(String macAddress) {

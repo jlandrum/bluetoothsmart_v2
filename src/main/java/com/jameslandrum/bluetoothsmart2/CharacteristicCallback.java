@@ -16,6 +16,14 @@
 
 package com.jameslandrum.bluetoothsmart2;
 
-public interface DeviceUpdateListener {
-    void onDeviceUpdateEvent(int action);
+public interface CharacteristicCallback {
+    int EVENT_CHARACTERISTIC_WRITE = 0x01;
+    int EVENT_CHARACTERISTIC_WRITE_FAILURE = 0xF1;
+    int EVENT_CHARACTERISTIC_READ = 0x02;
+    int EVENT_CHARACTERISTIC_READ_FAILURE = 0xF2;
+    int EVENT_DESCRIPTOR_WRITE = 0x03;
+    int EVENT_DESCRIPTOR_WRITE_FAILURE = 0xF3;
+    int EVENT_SECURITY_FAILURE = 0xFF;
+
+    void onEvent(int event);
 }

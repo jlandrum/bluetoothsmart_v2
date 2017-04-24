@@ -16,9 +16,9 @@
 
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
-import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
+import com.jameslandrum.bluetoothsmart2.NotificationCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDeviceManager;
 import com.jameslandrum.bluetoothsmart2.annotations.Sequential;
 
@@ -40,6 +40,7 @@ public final class Intention {
     @SuppressWarnings("unused")
     public static class Builder {
         Intention mIntentions;
+        private boolean mConnectAdded;
 
         /**
          * Builder for creating a new intention.
@@ -63,6 +64,7 @@ public final class Intention {
          */
         public Builder connect(@Nullable ResultHandler resultHandler) {
             mIntentions.mActions.add(0,new ConnectAction(SmartDeviceManager.getActiveContext(), resultHandler));
+            mConnectAdded = true;
             return this;
         }
 
@@ -70,34 +72,25 @@ public final class Intention {
          * Changes the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
          * @param characteristic The characteristic to update.
-         * @param timeout How long before the action should be cancelled and a timeout error thrown.
-         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
-         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
-         * @param resultHandler An optional handler to be called once the action completes or fails.
          * @param data The byte data to write
          * @return The builder.
          */
-        @SuppressWarnings("SameParameterValue")
         @Sequential
-        public Builder changeCharacteristic(Characteristic characteristic, int timeout, @Nullable ResultHandler resultHandler, byte ... data) {
-            return changeCharacteristic(characteristic, timeout, resultHandler, -1, data);
+        public Builder changeCharacteristic(Characteristic characteristic, byte[] data) {
+            return changeCharacteristic(characteristic, null, data);
         }
 
         /**
          * Changes the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
          * @param characteristic The characteristic to update.
-         * @param timeout How long before the action should be cancelled and a timeout error thrown.
-         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
-         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
          * @param resultHandler An optional handler to be called once the action completes or fails.
-         * @param writeMode The BluetoothGattCharacteristic WRITE_TYPE to write with.
          * @param data The byte data to write
          * @return The builder.
          */
         @Sequential
-        public Builder changeCharacteristic(Characteristic characteristic, int timeout, @Nullable ResultHandler resultHandler, int writeMode, byte ... data) {
-            mIntentions.mActions.add(new WriteCharacteristicAction(characteristic, timeout, resultHandler, writeMode, data));
+        public Builder changeCharacteristic(Characteristic characteristic, @Nullable ResultHandler resultHandler, byte[] data) {
+            mIntentions.mActions.add(new WriteCharacteristicAction(characteristic, resultHandler, data));
             return this;
         }
 
@@ -105,32 +98,37 @@ public final class Intention {
          * Reads the value of a characteristic with a given invoke handler to allow errors to be ignored or otherwise
          * resolved.
          * @param characteristic The characteristic to read.
-         * @param timeout How long before the action should be cancelled and a timeout error thrown.
-         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
-         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @return The builder.
          */
         @Sequential
-        public Builder readCharacteristic(Characteristic characteristic, int timeout, @Nullable ResultHandler resultHandler) {
-            mIntentions.mActions.add(new ReadCharacteristicAction(characteristic, timeout, resultHandler));
+        public Builder readCharacteristic(Characteristic characteristic, @Nullable ResultHandler resultHandler) {
+            mIntentions.mActions.add(new ReadCharacteristicAction(characteristic, resultHandler));
             return this;
         }
 
         /**
          * Registers a callback for characteristic notifications.
          * @param characteristic The characteristic to watch.
-         * @param timeout How long before the action should be cancelled and a timeout error thrown.
-         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
-         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
+         * @param callback the callback to add for notifications.
+         * @return The builder.
+         */
+        @Sequential
+        public Builder registerForNotifications(Characteristic characteristic, NotificationCallback callback) {
+            return this.registerForNotifications(characteristic, null, callback);
+        }
+
+        /**
+         * Registers a callback for characteristic notifications.
+         * @param characteristic The characteristic to watch.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @param callback the callback to add for notifications.
          * @return The builder.
          */
         @Sequential
-        public Builder registerForNotifications(Characteristic characteristic, int timeout,
+        public Builder registerForNotifications(Characteristic characteristic,
                                                 @Nullable ResultHandler resultHandler, NotificationCallback callback) {
-            mIntentions.mActions.add(new SetNotificationAction(characteristic, timeout, 0,
+            mIntentions.mActions.add(new SetNotificationAction(characteristic, 0,
                     true, resultHandler, callback));
             return this;
         }
@@ -138,17 +136,14 @@ public final class Intention {
         /**
          * Unregisters a callback for characteristic notifications.
          * @param characteristic The characteristic to update.
-         * @param timeout How long before the action should be cancelled and a timeout error thrown.
-         *                Note that this does NOT cancel the actual action, just the queue - the Bluetooth stack
-         *                will still attempt a best-effort to complete the action. Use -1 to wait indefinitely.
          * @param resultHandler An optional handler to be called once the action completes or fails.
          * @param callback the callback to remove from notifications.
          * @return The builder.
          */
         @Sequential
-        public Builder unregisterForNotifications(Characteristic characteristic, int timeout,
+        public Builder unregisterForNotifications(Characteristic characteristic,
                                                 @Nullable ResultHandler resultHandler, NotificationCallback callback) {
-            mIntentions.mActions.add(new SetNotificationAction(characteristic, timeout, 0,
+            mIntentions.mActions.add(new SetNotificationAction(characteristic, 0,
                     false, resultHandler, callback));
             return this;
         }
@@ -189,7 +184,7 @@ public final class Intention {
          * If the event should not block future events in the queue, it should ensure that it explicitly
          * returns Result.OK;
          * @param execute The method to execute.
-         * @return
+         * @return The builder.
          */
         @Sequential
         public Builder then(ExecuteAction.Execute execute) {
@@ -202,7 +197,7 @@ public final class Intention {
          * returns Result.OK;
          * @param execute The method to execute.
          * @param resultHandler An optional handler to be called once the action completes or fails.
-         * @return
+         * @return The builder.
          */
         @Sequential
         public Builder then(ExecuteAction.Execute execute, @Nullable ResultHandler resultHandler) {
@@ -211,6 +206,8 @@ public final class Intention {
         }
 
         public Intention build() {
+            if (!mConnectAdded)
+                mIntentions.mActions.add(0, new ConnectAction(SmartDeviceManager.getActiveContext(), null));
             return mIntentions;
         }
 

@@ -21,7 +21,6 @@ import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 import java.util.ArrayList;
 
-@SuppressWarnings("unused")
 public final class ActionRunner extends Thread {
     private final Object mLock = new Object();
     private Executor mExecutor;
@@ -42,6 +41,7 @@ public final class ActionRunner extends Thread {
                     if (!mQueues.isEmpty()) {
                         Logging.notice("ActionRunner queue started.");
                         ExecutionQueue mActiveQueue = mQueues.remove(0);
+
                         while (!mActiveQueue.completed()) {
                             if (!mActiveQueue.step(mDevice)) {
                                 break;

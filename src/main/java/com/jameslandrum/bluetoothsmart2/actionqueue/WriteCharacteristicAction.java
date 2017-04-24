@@ -22,15 +22,11 @@ import com.jameslandrum.bluetoothsmart2.*;
 final class WriteCharacteristicAction extends Action {
     private final Characteristic mCharacteristic;
     private final byte[] mData;
-    private final int mWriteMode;
-    private final int mTimeout;
 
-    WriteCharacteristicAction(Characteristic characteristic, int timeout, ResultHandler handler, int writeMode, byte[] data) {
+    WriteCharacteristicAction(Characteristic characteristic, ResultHandler handler, byte[] data) {
         super(handler);
         mCharacteristic = characteristic;
         mData = data;
-        mWriteMode = writeMode;
-        mTimeout = timeout;
     }
 
     @Override
@@ -38,39 +34,38 @@ final class WriteCharacteristicAction extends Action {
         if (!device.isReady()) {
             setResult(Result.NOT_READY);
         } else {
-            device.subscribeToUpdates(mListener);
+            mCharacteristic.addCallback(mListener);
 
             try {
                 BluetoothGattCharacteristic gattCharacteristic = mCharacteristic.getNativeCharacteristic();
                 gattCharacteristic.setValue(mData);
-                if (mWriteMode != -1) gattCharacteristic.setWriteType(mWriteMode);
+                if (mCharacteristic.getWriteMode() != -1) gattCharacteristic.setWriteType(mCharacteristic.getWriteMode());
                 device.getActiveConnection().writeCharacteristic(gattCharacteristic);
-                Logging.notice("Write sent with type %d.", mWriteMode);
-                waitForFinish(mTimeout);
+                Logging.notice("Write sent with type %d.", mCharacteristic.getWriteMode());
+                waitForFinish(mCharacteristic.getTimeout());
             } catch (Exception e) {
                 Logging.notice("Write error: %s", e.getMessage());
                 e.printStackTrace();
                 setResult(Result.UNKNOWN);
             }
 
-            device.unsubscribeToUpdates(mListener);
+            mCharacteristic.removeCallback(mListener);
         }
 
         return getResult();
     }
 
-    private final DeviceUpdateListener mListener = (action) -> {
+    private final CharacteristicCallback mListener = (action) -> {
         switch (action) {
-            case SmartDevice.EVENT_SECURITY_FAILURE:
+            case CharacteristicCallback.EVENT_SECURITY_FAILURE:
                 setResult(Result.BONDING_REQUIRED);
                 finish();
                 break;
-            case SmartDevice.EVENT_CHARACTERISTIC_WRITE_FAILURE:
-            case SmartDevice.EVENT_CONNECTION_ERROR:
+            case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE_FAILURE:
                 setResult(Result.FAILED);
                 finish();
                 break;
-            case SmartDevice.EVENT_CHARACTERISTIC_WRITTEN:
+            case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE:
                 setResult(Result.OK);
                 finish();
                 break;
