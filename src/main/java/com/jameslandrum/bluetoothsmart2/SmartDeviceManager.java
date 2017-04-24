@@ -107,13 +107,13 @@ public enum SmartDeviceManager {
         mScanner.removeScanListener(scannerListener);
     }
 
-    public void resume() {
+    public void wake() {
         Logging.notice("Resuming Scanning");
         mIsForeground = true;
         scanParametersChanged();
     }
 
-    public void yield() {
+    public void sleep() {
         Logging.notice("Yielding Scanning");
         mIsForeground = false;
         scanParametersChanged();
@@ -132,5 +132,9 @@ public enum SmartDeviceManager {
     public SmartDevice getDeviceByMac(String macAddress) {
 
         return mScanner.getDeviceByMacAddress(macAddress);
+    }
+
+    public void enableDiscovery(boolean b) {
+        mScanner.enableDiscovery(b);
     }
 }

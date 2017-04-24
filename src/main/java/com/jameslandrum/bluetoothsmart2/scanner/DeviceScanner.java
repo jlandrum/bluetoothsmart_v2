@@ -20,8 +20,6 @@ import android.bluetooth.BluetoothDevice;
 import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
-import com.annimon.stream.Optional;
-import com.annimon.stream.Stream;
 import com.jameslandrum.bluetoothsmart2.ScannerCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 import com.jameslandrum.bluetoothsmart2.actionqueue.Identifier;
@@ -47,6 +45,7 @@ public abstract class DeviceScanner {
     public static final int SCAN_MODE_NORMAL =      1;
     public static final int SCAN_MODE_LOW_LATENCY = 2;
 
+    private boolean mEnableDiscovery = false;
     protected static int mScanMode;
     protected static int mScanInterval;
     private static DeviceScanner mInstance;
@@ -58,7 +57,9 @@ public abstract class DeviceScanner {
     public void forgetDevice(SmartDevice device) {
         mInvalidDevices.remove(device.getAddress());
         mDevices.remove(device.getAddress());
-        Stream.of(mListeners).forEach(e->e.onDeviceEvent(ScannerCallback.DEVICE_FORGOTTEN, device));
+        for (ScannerCallback c : mListeners) {
+            c.onDeviceEvent(ScannerCallback.DEVICE_FORGOTTEN, device);
+        }
     }
 
     public void injectDevice(SmartDevice device) {
@@ -103,32 +104,39 @@ public abstract class DeviceScanner {
         if (mDevices.containsKey(device.getAddress())) {
             SmartDevice target = mDevices.get(device.getAddress());
             if (isBeacon) {
-                target.notifyEvent(SmartDevice.EVENT_NEW_BEACON);
-                Stream.of(mListeners).forEach(e->e.onDeviceEvent(ScannerCallback.DEVICE_BEACONED, target));
-            } else {
-                target.newAdvertisement(data,rssi);
-                Stream.of(mListeners).forEach(e->e.onDeviceEvent(ScannerCallback.DEVICE_UPDATED, target));
-            }
-        } else if (!isBeacon) {
-            Optional<Identifier> identifier = Stream.of(mIdentifiers).filter(id -> {
-                if (id.getName() != null && !id.getName().equals(device.getName())) return false;
-                if (!Stream.of(id.getUuids()).allMatch(uuid->
-                     Stream.of(uuids).anyMatch(duuid-> duuid != null && duuid.equals(uuid)))) {
-                    return false;
+                target.onBeacon();
+                for (ScannerCallback c : mListeners) {
+                    c.onDeviceEvent(ScannerCallback.DEVICE_BEACONED, target);
                 }
-                if (id.getByteId() != null && !id.getByteId().checkBytes(data)) return false;
-                return true;
-            }).findFirst();
+            } else {
+                target.onAdvertisement(data,rssi);
+                for (ScannerCallback c : mListeners) {
+                    c.onDeviceEvent(ScannerCallback.DEVICE_UPDATED, target);
+                }
+            }
+        } else if (mEnableDiscovery && !isBeacon) {
+            Identifier identifier = null;
 
-            if (identifier.isPresent()) {
+            getId: for (Identifier i : mIdentifiers) {
+                if (i.getName() != null && !i.getName().equals(device.getName())) continue;
+                for (UUID uuid: i.getUuids()) {
+                    if (!uuids.contains(uuid)) continue getId;
+                }
+                if (i.getByteId() != null && i.getByteId().checkBytes(data)) continue;
+                identifier = i;
+            }
+
+            if (identifier != null) {
                 try {
-                    Class c = identifier.get().getDeviceClass();
-                    SmartDevice target = (SmartDevice) c.newInstance();
+                    Class k = identifier.getDeviceClass();
+                    SmartDevice target = (SmartDevice) k.newInstance();
                     target.init(device);
-                    target.newAdvertisement(data,rssi);
+                    target.onAdvertisement(data,rssi);
                     mDevices.put(device.getAddress(), target);
 
-                    Stream.of(mListeners).forEach(e->e.onDeviceEvent(ScannerCallback.DEVICE_DISCOVERED, target));
+                    for (ScannerCallback c : mListeners) {
+                        c.onDeviceEvent(ScannerCallback.DEVICE_DISCOVERED, target);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -137,6 +145,10 @@ public abstract class DeviceScanner {
             }
         }
 
+    }
+
+    public void enableDiscovery(boolean enableDiscovery) {
+        mEnableDiscovery = enableDiscovery;
     }
 
     public List<SmartDevice> getAllDevices() {

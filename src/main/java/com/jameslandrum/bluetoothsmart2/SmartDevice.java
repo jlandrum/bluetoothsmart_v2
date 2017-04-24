@@ -183,15 +183,11 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         return mDevice.getAddress();
     }
 
-    public void notifyEvent(int event) {
-
-    }
-
     public BluetoothDevice getDevice() {
         return mDevice;
     }
 
-    public void newAdvertisement(byte[] data, int rssi) {
+    public void onAdvertisement(byte[] data, int rssi) {
         mLastSeen = System.currentTimeMillis();
         mAdvertisement = data;
         System.arraycopy(data, 0, mAdvertisement, 0, mAdvertisement.length);
@@ -214,4 +210,6 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     public boolean isConnected() {
         return mConnected;
     }
+
+    public abstract void onBeacon();
 }

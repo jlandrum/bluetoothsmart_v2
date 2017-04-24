@@ -25,8 +25,6 @@ import android.bluetooth.le.ScanSettings;
 import android.os.Build;
 import android.os.ParcelUuid;
 import android.util.Log;
-import com.annimon.stream.Collectors;
-import com.annimon.stream.Stream;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,9 +78,11 @@ public class LollipopDeviceScanner extends DeviceScanner {
 
                     if (uuids == null) {
                         if (result.getScanRecord().getServiceUuids() != null) {
-                            uuids = Stream.of(result.getScanRecord().getServiceUuids())
-                                    .map(ParcelUuid::getUuid)
-                                    .collect(Collectors.toList());
+                            uuids = new ArrayList<>();
+
+                            for (ParcelUuid uuid : result.getScanRecord().getServiceUuids()) {
+                                uuids.add(uuid.getUuid());
+                            }
                         } else {
                             uuids = new ArrayList<>();
                         }
