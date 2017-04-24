@@ -24,21 +24,23 @@ final public class UUID2  {
      * @param uuid A complete or incomplete UUID.
      */
     public UUID2(@Nullable String base, String uuid) {
-        if (PATTERN_FULL.matcher(uuid).matches()) mInternalRef = UUID.fromString(uuid);
+        if (PATTERN_FULL.matcher(uuid).matches()) {
+            mInternalRef = UUID.fromString(uuid);
+            return;
+        }
         if (base != null && !PATTERN_FULL.matcher(base).matches()) throw new IllegalArgumentException("Base UUID must be complete UUID or null.");
         Matcher partial = PATTERN_PARTIAL.matcher(uuid);
         if (!partial.matches()) throw new IllegalArgumentException("Component UUID must be complete UUID, 4-byte UUID, 8-byte UUID, or zero-padded UUID.");
 
         StringBuilder builder = new StringBuilder(CORE_UUID);
         if (base != null) builder.replace(0, builder.length(), base);
-        if (partial.group(0) != null) builder.replace(0,4, partial.group(0));
-        builder.replace(4,8, partial.group(1));
+        if (partial.group(1) != null) builder.replace(0,4, partial.group(0));
+        builder.replace(4,8, partial.group(2));
         mInternalRef = UUID.fromString(builder.toString());
     }
 
     public UUID2(String uuid) {
-        if (PATTERN_FULL.matcher(uuid).matches()) mInternalRef = UUID.fromString(uuid);
-        else throw new IllegalArgumentException("UUID must be complete UUID.");
+        this(CORE_UUID, uuid);
     }
 
     public UUID2(UUID uuid) {

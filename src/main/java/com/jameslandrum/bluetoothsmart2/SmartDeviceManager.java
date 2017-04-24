@@ -47,6 +47,7 @@ public enum SmartDeviceManager {
     }
 
     public static Context getActiveContext() {
+        if (mActiveContext == null) throw new RuntimeException("Context must be supplied by application class.");
         return mActiveContext.get();
     }
 

@@ -3,7 +3,6 @@ package com.jameslandrum.bluetoothsmart2;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -18,7 +17,7 @@ public class Characteristic {
     private int mTimeout = 5000;
     private int mWriteMode = -1;
 
-    private Characteristic(@Nullable UUID2 service, @NotNull UUID2 handle, int timeout) {
+    private Characteristic(@Nullable UUID2 service, UUID2 handle, int timeout) {
         if (service == null) Log.w(this.getClass().getCanonicalName(),
                 "Not supplying a service may decrease performance. Use with caution.");
         if (service!=null) mService = service.getUuid();

@@ -122,7 +122,7 @@ public abstract class DeviceScanner {
                 for (UUID uuid: i.getUuids()) {
                     if (!uuids.contains(uuid)) continue getId;
                 }
-                if (i.getByteId() != null && i.getByteId().checkBytes(data)) continue;
+                if (i.getByteId() != null && !i.getByteId().checkBytes(data)) continue;
                 identifier = i;
             }
 
