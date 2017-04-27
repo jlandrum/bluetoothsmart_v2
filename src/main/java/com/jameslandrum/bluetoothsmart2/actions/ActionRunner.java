@@ -31,6 +31,7 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
     private SmartDevice mDevice;
     private ConcurrentLinkedQueue<Action> mActions = new ConcurrentLinkedQueue<>();
 
+
     public ActionRunner(SmartDevice parent) {
         mDevice = parent;
         mDevice.subscribeToUpdates(this);
@@ -40,20 +41,22 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
         @Override
         public void run() {
             Logging.notice("ActionRunner thread has started.");
-            while (!interrupted()) {
+            while (!interrupted() && mDevice.isReady()) {
                 try {
                     if (!mActions.isEmpty()) {
                         Logging.notice("ActionRunner action started.");
                         Action mActiveAction = mActions.remove();
-                        mActiveAction.execute(mDevice);
+                        if (!mActiveAction.handleResult(mActiveAction.execute(mDevice))) {
+                            mActions.clear();
+                        }
                     } else {
                         Logging.notice("ActionRunner queue empty.");
                         synchronized (mLock) {
                             mLock.wait(mDevice.getConnectionTimeout());
                         }
+                        if (mActions.isEmpty()) interrupt();
                     }
                 } catch (InterruptedException ignored) {
-                    Logging.notice("ActionRunner terminated due to disconnect.");
                 }
             }
             Logging.notice("ActionRunner thread has terminated.");
@@ -64,18 +67,24 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
     }
     @Override
     public void onConnected(SmartDevice device) {
-        if (mExecutor != null) {
-            mExecutor.start();
-        }
     }
 
     @Override
     public void onDisconnected(SmartDevice device) {
-        if (mExecutor != null) mExecutor.interrupt();
+        if (mExecutor != null) {
+            mExecutor.interrupt();
+            synchronized (mLock) {
+                mLock.notify();
+            }
+        }
     }
 
     @Override
-    public void onServicesDiscovered(SmartDevice device) {}
+    public void onServicesDiscovered(SmartDevice device) {
+        if (mExecutor != null) {
+            mExecutor.start();
+        }
+    }
 
     public void addAction(Action action, Context context)
     {

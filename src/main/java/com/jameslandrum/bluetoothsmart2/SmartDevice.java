@@ -27,14 +27,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @SuppressWarnings("unused")
 public abstract class SmartDevice extends BluetoothGattCallback {
     private BluetoothDevice mDevice;
-    private ActionRunner mActionRunner = new ActionRunner(this);
 
     private boolean mIsRegistered;
 
-    private HashSet<Characteristic> mCharacteristics = new HashSet<>();
-
     private ConcurrentLinkedQueue<OnConnectionStateListener> mConnectionListeners = new ConcurrentLinkedQueue<>();
-    private ConcurrentLinkedQueue<OnDeviceUpdateListener> mUpdateListeners = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<OnDeviceUpdateListener> mUpdateListeners  = new ConcurrentLinkedQueue<>();
+
+    private ActionRunner mActionRunner =  new ActionRunner(this);
+    private HashSet<Characteristic> mCharacteristics = new HashSet<>();
 
     private BluetoothGatt mActiveConnection;
     private boolean mServicesDiscovered;
@@ -46,7 +46,9 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     private Timer mRssiAdjuster = new Timer();
 
-    public void init(BluetoothDevice device) {
+    public abstract List<Characteristic> allocateCharacteristics();
+
+    final public void init(BluetoothDevice device) {
         mDevice = device;
         mRssiAdjuster.schedule(new TimerTask() {
             @Override
@@ -66,32 +68,101 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         return mActiveConnection;
     }
 
-    public void connect(Context context) {
+    final public void connect(Context context) {
         mDevice.connectGatt(context, false, this);
     }
 
-    public void disconnect() {
+    final public void disconnect() {
         if (mActiveConnection != null) mActiveConnection.disconnect();
     }
 
-    final protected void startAction(Action action, Context context) {
+    final protected void doAction(Action action, Context context) {
         mActionRunner.addAction(action, context);
     }
 
-    public long getConnectionTimeout() { return mConnectionTimeout; }
-    public void setConnectionTimeout(long time) { mConnectionTimeout = time; }
+    final public long getConnectionTimeout() { return mConnectionTimeout; }
+
+    final public void setConnectionTimeout(long time) { mConnectionTimeout = time; }
+
+    final public boolean isReady() {
+        return mServicesDiscovered && mActiveConnection != null;
+    }
+
+    final public void subscribeToUpdates(OnConnectionStateListener listener) {
+        mConnectionListeners.add(listener);
+    }
+
+    final public void unsubscribeToUpdates(OnConnectionStateListener listener) {
+        mConnectionListeners.remove(listener);
+    }
+
+    final public String getAddress() {
+        return mDevice.getAddress();
+    }
+
+    final public BluetoothDevice getDevice() {
+        return mDevice;
+    }
+
+    final public int getRssi() {
+        return mRssi;
+    }
+
+    final public byte[] getAdvertisement() {
+        return mAdvertisement;
+    }
+
+    final public long getLastSeen() {
+        return mLastSeen;
+    }
+
+    final public boolean isConnected() {
+        return mConnected;
+    }
+
+    final public void updateAdvertisement(byte[] data, int rssi) {
+        mLastSeen = System.currentTimeMillis();
+        mAdvertisement = data;
+        System.arraycopy(data, 0, mAdvertisement, 0, mAdvertisement.length);
+        mRssi = rssi;
+        for (OnDeviceUpdateListener updateListener : mUpdateListeners) {
+            updateListener.onDeviceUpdated(this);
+        }
+        onAdvertisement();
+    }
+
+    public void onAdvertisement() {}
+    public void onBeacon() {}
+    public void onConnect() {};
+    public void onDisconnect() {};
+    public void onReady() {};
+
+    public void addOnUpdateListener(OnDeviceUpdateListener listener) {
+        if (!mUpdateListeners.contains(listener)) {
+            mUpdateListeners.add(listener);
+        }
+    }
+
+    public void removeOnUpdateListener(OnDeviceUpdateListener listener) {
+        mUpdateListeners.remove(listener);
+    }
+
+    private void setRssi(int rssi) {
+        this.mRssi = rssi;
+    }
 
     @Override
     final public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         super.onConnectionStateChange(gatt, status, newState);
-        if (newState == BluetoothAdapter.STATE_CONNECTED) {
+        if (newState == BluetoothAdapter.STATE_CONNECTED && !mConnected) {
             Logging.notice("Device %s connected.", this.getClass().getSimpleName());
             mActiveConnection = gatt;
             mActiveConnection.discoverServices();
             for (OnConnectionStateListener d : mConnectionListeners) {
                 d.onConnected(this);
             }
-        } else {
+            onConnect();
+        } else if (newState != BluetoothAdapter.STATE_CONNECTED && mConnected){
             for (Characteristic c : mCharacteristics) {
                 c.clearAllCallbacks();
             }
@@ -99,6 +170,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             for (OnConnectionStateListener d : mConnectionListeners) {
                 d.onDisconnected(this);
             }
+            onDisconnect();
             for (Characteristic characteristic : mCharacteristics) characteristic.reset();
             mActiveConnection = null;
             gatt.close();
@@ -184,70 +256,4 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             }
         }
     }
-
-    public boolean isReady() {
-        return mServicesDiscovered && mActiveConnection != null;
-    }
-
-    public void subscribeToUpdates(OnConnectionStateListener listener) {
-        mConnectionListeners.add(listener);
-    }
-
-    public void unsubscribeToUpdates(OnConnectionStateListener listener) {
-        mConnectionListeners.remove(listener);
-    }
-
-    public String getAddress() {
-        return mDevice.getAddress();
-    }
-
-    public BluetoothDevice getDevice() {
-        return mDevice;
-    }
-
-    public void onAdvertisement(byte[] data, int rssi) {
-        mLastSeen = System.currentTimeMillis();
-        mAdvertisement = data;
-        System.arraycopy(data, 0, mAdvertisement, 0, mAdvertisement.length);
-        mRssi = rssi;
-        for (OnDeviceUpdateListener updateListener : mUpdateListeners) {
-            updateListener.onDeviceUpdated(this);
-        }
-    }
-
-    public int getRssi() {
-        return mRssi;
-    }
-
-    public byte[] getAdvertisement() {
-        return mAdvertisement;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public long getLastSeen() {
-        return mLastSeen;
-    }
-
-    public boolean isConnected() {
-        return mConnected;
-    }
-
-    public void onBeacon() {
-    }
-
-    public void addOnUpdateListener(OnDeviceUpdateListener listener) {
-        if (!mUpdateListeners.contains(listener)) {
-            mUpdateListeners.add(listener);
-        }
-    }
-
-    public void removeOnUpdateListener(OnDeviceUpdateListener listener) {
-        mUpdateListeners.remove(listener);
-    }
-
-    private void setRssi(int rssi) {
-        this.mRssi = rssi;
-    }
-
-    public abstract List<Characteristic> allocateCharacteristics();
 }

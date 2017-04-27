@@ -19,6 +19,8 @@ package com.jameslandrum.bluetoothsmart2.actions;
 import android.bluetooth.BluetoothGattCharacteristic;
 import com.jameslandrum.bluetoothsmart2.*;
 
+import java.math.BigInteger;
+
 public final class WriteCharacteristic extends Action {
     private static final int RESULT_BONDING_REQUIRED = 0x10;
     private static final int RESULT_FAILED = 0x11;
@@ -52,7 +54,10 @@ public final class WriteCharacteristic extends Action {
                 gattCharacteristic.setValue(mData);
                 if (mCharacteristic.getWriteMode() != -1) gattCharacteristic.setWriteType(mCharacteristic.getWriteMode());
                 device.getActiveConnection().writeCharacteristic(gattCharacteristic);
-                Logging.notice("Write sent with type %d.", mCharacteristic.getWriteMode());
+                Logging.notice("Write sent to %s, %s, type %d.",
+                        mCharacteristic.getNativeCharacteristic().getUuid(),
+                        new BigInteger(1, mData).toString(16),
+                        mCharacteristic.getWriteMode());
                 waitForFinish(mCharacteristic.getTimeout());
             } catch (Exception e) {
                 Logging.notice("Write error: %s", e.getMessage());

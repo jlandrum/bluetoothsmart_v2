@@ -29,7 +29,7 @@ public abstract class Action {
 
     private ResultHandler mResultHandler = (code)->code==RESULT_OK;
     private final Object mLock = new Object();
-    private int mResult = RESULT_OK;
+    private int mResult = RESULT_UNKNOWN;
 
     /**
      * Creates a new instanc
@@ -77,10 +77,8 @@ public abstract class Action {
             try {
                 if (timeout == -1) mLock.wait();
                 else mLock.wait(timeout);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                mResult = RESULT_TIMED_OUT;
-            }
+            } catch (InterruptedException ignored) {}
+            if (mResult != RESULT_OK) setResult(RESULT_TIMED_OUT);
         }
     }
 

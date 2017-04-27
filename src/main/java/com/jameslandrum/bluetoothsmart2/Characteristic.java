@@ -1,3 +1,19 @@
+/*
+  Copyright 2017 James Landrum
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+ */
+
 package com.jameslandrum.bluetoothsmart2;
 
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -6,35 +22,30 @@ import android.util.Log;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Characteristic {
     private BluetoothGattCharacteristic mCharacteristic;
-    private ConcurrentLinkedQueue<NotificationCallback> mNotifications = new ConcurrentLinkedQueue<>();
-    private ConcurrentLinkedQueue<CharacteristicCallback> mCallbacks = new ConcurrentLinkedQueue<>();
+    private LinkedBlockingQueue<NotificationCallback> mNotifications = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<CharacteristicCallback> mCallbacks = new LinkedBlockingQueue<>();
 
     private UUID mService;
     private UUID mHandle;
     private int mTimeout = 5000;
     private int mWriteMode = -1;
 
-    private Characteristic(@Nullable UUID2 service, UUID2 handle, int timeout) {
-        if (service == null) Log.w(this.getClass().getCanonicalName(),
-                "Not supplying a service may decrease performance. Use with caution.");
-        if (service!=null) mService = service.getUuid();
+    private Characteristic(UUID2 service, UUID2 handle, int timeout) {
+        mService = service.getUuid();
         mHandle = handle.getUuid();
-    };
+        mTimeout = timeout;
+    }
 
-    public Characteristic(@Nullable String service, String handle) {
+    public Characteristic(String service, String handle) {
         this(service,handle,5000);
     }
 
-    public Characteristic(@Nullable String service, String handle, int timeout) {
+    public Characteristic(String service, String handle, int timeout) {
         this(new UUID2(service), new UUID2(service, handle), timeout);
-    }
-
-    @Override
-    public int hashCode() {
-        return mHandle.hashCode();
     }
 
     void reset() {
@@ -104,5 +115,10 @@ public class Characteristic {
     public byte[] getValue() {
         if (getNativeCharacteristic() == null) return null;
         return getNativeCharacteristic().getValue();
+    }
+
+    @Override
+    public int hashCode() {
+        return mHandle.hashCode();
     }
 }

@@ -104,7 +104,7 @@ public abstract class DeviceScanner {
             if (isBeacon) {
                 target.onBeacon();
             } else {
-                target.onAdvertisement(data,rssi);
+                target.updateAdvertisement(data,rssi);
             }
         } else if (mEnableDiscovery && !isBeacon) {
             Identifier identifier = null;
@@ -123,7 +123,7 @@ public abstract class DeviceScanner {
                     Class<? extends SmartDevice> k = identifier.getDeviceClass();
 
                     SmartDevice target = injectDevice(k, device);
-                    target.onAdvertisement(data,rssi);
+                    target.updateAdvertisement(data,rssi);
 
                     for (ScannerCallback c : mListeners) {
                         c.onDeviceDiscovered(target);
