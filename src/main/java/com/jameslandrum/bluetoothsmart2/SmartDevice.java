@@ -18,14 +18,10 @@ package com.jameslandrum.bluetoothsmart2;
 
 import android.bluetooth.*;
 import android.content.Context;
-import com.jameslandrum.bluetoothsmart2.actionqueue.ActionRunner;
-import com.jameslandrum.bluetoothsmart2.actionqueue.ExecutionQueue;
-import com.jameslandrum.bluetoothsmart2.actionqueue.Intention;
+import com.jameslandrum.bluetoothsmart2.actions.Action;
+import com.jameslandrum.bluetoothsmart2.actions.ActionRunner;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @SuppressWarnings("unused")
@@ -45,6 +41,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     private byte[] mAdvertisement = new byte[62];
     private int mRssi = -120;
     private long mLastSeen;
+    private long mConnectionTimeout = 15000;
     private boolean mConnected;
 
     private Timer mRssiAdjuster = new Timer();
@@ -62,12 +59,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
                 }
             }
         }, 5000, 5000);
-    }
-
-    final public void registerCharacteristics(Characteristic ... characteristics) {
-        if (isConnected()) throw new RuntimeException("Cannot modify characteristics of connected device.");
-        mCharacteristics.clear();
-        Collections.addAll(mCharacteristics, characteristics);
+        mCharacteristics.addAll(allocateCharacteristics());
     }
 
     final public BluetoothGatt getActiveConnection() {
@@ -79,12 +71,15 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     }
 
     public void disconnect() {
-        if (mActiveConnection!=null) mActiveConnection.disconnect();
+        if (mActiveConnection != null) mActiveConnection.disconnect();
     }
 
-    final protected void startIntentions(Intention queue) {
-        mActionRunner.addQueue(new ExecutionQueue(queue));
+    final protected void startAction(Action action, Context context) {
+        mActionRunner.addAction(action, context);
     }
+
+    public long getConnectionTimeout() { return mConnectionTimeout; }
+    public void setConnectionTimeout(long time) { mConnectionTimeout = time; }
 
     @Override
     final public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -97,14 +92,18 @@ public abstract class SmartDevice extends BluetoothGattCallback {
                 d.onConnected(this);
             }
         } else {
-            for (Characteristic c : mCharacteristics) { c.clearAllCallbacks(); }
+            for (Characteristic c : mCharacteristics) {
+                c.clearAllCallbacks();
+            }
             Logging.notice("Device %s disconnected.", this.getClass().getSimpleName());
-            for (OnConnectionStateListener d : mConnectionListeners) { d.onDisconnected( this); }
+            for (OnConnectionStateListener d : mConnectionListeners) {
+                d.onDisconnected(this);
+            }
             for (Characteristic characteristic : mCharacteristics) characteristic.reset();
             mActiveConnection = null;
             gatt.close();
         }
-        mConnected = newState==BluetoothAdapter.STATE_CONNECTED;
+        mConnected = newState == BluetoothAdapter.STATE_CONNECTED;
     }
 
     @Override
@@ -115,12 +114,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             for (Characteristic c : mCharacteristics) {
                 BluetoothGattService service = gatt.getService(c.getServiceUuid());
                 if (service == null) {
-                   for (BluetoothGattService gattService : gatt.getServices()) {
-                       if (gattService.getCharacteristic(c.getHandleUuid()) != null) {
-                           service = gattService;
-                           break;
-                       }
-                   }
+                    for (BluetoothGattService gattService : gatt.getServices()) {
+                        if (gattService.getCharacteristic(c.getHandleUuid()) != null) {
+                            service = gattService;
+                            break;
+                        }
+                    }
                 }
                 if (service != null) {
                     c.prepare(service.getCharacteristic(c.getHandleUuid()));
@@ -128,7 +127,9 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             }
 
             mServicesDiscovered = true;
-            for (OnConnectionStateListener c : mConnectionListeners) { c.onServicesDiscovered(this); }
+            for (OnConnectionStateListener c : mConnectionListeners) {
+                c.onServicesDiscovered(this);
+            }
         } catch (Exception e) {
             e.printStackTrace();
             disconnect();
@@ -231,7 +232,8 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         return mConnected;
     }
 
-    public void onBeacon() {}
+    public void onBeacon() {
+    }
 
     public void addOnUpdateListener(OnDeviceUpdateListener listener) {
         if (!mUpdateListeners.contains(listener)) {
@@ -246,4 +248,6 @@ public abstract class SmartDevice extends BluetoothGattCallback {
     private void setRssi(int rssi) {
         this.mRssi = rssi;
     }
+
+    public abstract List<Characteristic> allocateCharacteristics();
 }

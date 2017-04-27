@@ -14,24 +14,36 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
+/**
+ * Represents an actionable item.
+ */
 public abstract class Action {
-    private ResultHandler mResultHandler = (code)->code == Result.OK;
-    private final Object mLock = new Object();
-    private Result mResult = Result.UNKNOWN;
+    public static final int RESULT_OK           = 0x01;
+    public static final int RESULT_UNKNOWN      = 0x00;
+    public static final int RESULT_TIMED_OUT    = 0xFF;
+    public static final int RESULT_NOT_READY    = 0xFE;
 
+    private ResultHandler mResultHandler = (code)->code==RESULT_OK;
+    private final Object mLock = new Object();
+    private int mResult = RESULT_OK;
+
+    /**
+     * Creates a new instanc
+     * @param handler
+     */
     public Action(ResultHandler handler) {
         if (handler!=null) mResultHandler = handler;
     }
 
-    boolean handleResult(Result resultCode) {
+    boolean handleResult(int resultCode) {
         return mResultHandler.invoke(resultCode);
     }
 
-    void setResult(Result result) {
+    void setResult(int result) {
         mResult = result;
     }
 
@@ -55,7 +67,7 @@ public abstract class Action {
                 mLock.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                mResult = Result.TIMED_OUT;
+                mResult = RESULT_TIMED_OUT;
             }
         }
     }
@@ -67,30 +79,15 @@ public abstract class Action {
                 else mLock.wait(timeout);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                mResult = Result.TIMED_OUT;
+                mResult = RESULT_TIMED_OUT;
             }
         }
     }
 
-    public Result getResult() {
+    public int getResult() {
         return mResult;
     }
 
-    abstract Result execute(SmartDevice device);
+    abstract int execute(SmartDevice device);
     abstract boolean purge();
-
-    public enum Result {
-        /** An unusual error occurred **/
-        UNKNOWN,
-        /** The action timed out before it could be completed. **/
-        TIMED_OUT,
-        /** The device is not in a state applicable to the action provided **/
-        NOT_READY,
-        /** The action completed successfully **/
-        OK,
-        /** The action failed to finish successfully **/
-        FAILED,
-        /** The action failed due to the device requiring bonding to access the given resource **/
-        BONDING_REQUIRED,
-    }
 }

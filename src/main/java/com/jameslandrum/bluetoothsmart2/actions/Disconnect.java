@@ -14,25 +14,25 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.OnConnectionStateListener;
-import com.jameslandrum.bluetoothsmart2.SmartDeviceCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
-@SuppressWarnings({"unused", "WeakerAccess"})
-final class DisconnectAction extends Action {
-    public static final int ERROR_CONNECTION_TIMEOUT = -16;
-
-    public DisconnectAction(@Nullable ResultHandler handler) {
+/**
+ * Explicitly disconnects from the device. This is ideally used when letting the built-in state management
+ * will result in an unnecessary lingering connection.
+ */
+public final class Disconnect extends Action {
+    public Disconnect(@Nullable ResultHandler handler) {
         super(handler);
     }
 
     @Override
-    public Result execute(SmartDevice device) {
+    public int execute(SmartDevice device) {
         if (!device.isReady() || !device.isConnected()) {
-            setResult(Result.OK);
+            setResult(RESULT_OK);
         } else {
             device.subscribeToUpdates(mListener);
             device.disconnect();
@@ -54,7 +54,7 @@ final class DisconnectAction extends Action {
 
         @Override
         public void onDisconnected(SmartDevice device) {
-            setResult(Result.OK);
+            setResult(RESULT_OK);
             finish();
         }
 

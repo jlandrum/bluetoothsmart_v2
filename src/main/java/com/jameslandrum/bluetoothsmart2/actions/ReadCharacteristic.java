@@ -14,32 +14,34 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.Characteristic;
 import com.jameslandrum.bluetoothsmart2.CharacteristicCallback;
-import com.jameslandrum.bluetoothsmart2.SmartDeviceCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
-final class ReadCharacteristicAction extends Action {
+public final class ReadCharacteristic extends Action {
+    private static final int RESULT_BONDING_REQUIRED = 0x10;
+    private static final int RESULT_FAILED = 0x11;
+
     private Characteristic mCharacteristic;
 
-    ReadCharacteristicAction(Characteristic characteristic, @Nullable ResultHandler handler) {
+    ReadCharacteristic(Characteristic characteristic, @Nullable ResultHandler handler) {
         super(handler);
         mCharacteristic = characteristic;
     }
 
     @Override
-    public Result execute(SmartDevice device) {
+    public int execute(SmartDevice device) {
         if (!device.isReady() || !mCharacteristic.isReady()) {
-            setResult(Result.NOT_READY);
+            setResult(RESULT_NOT_READY);
         } else {
             mCharacteristic.addCallback(mListener);
 
             device.getActiveConnection().readCharacteristic(mCharacteristic.getNativeCharacteristic());
             waitForFinish(mCharacteristic.getTimeout());
-            setResult(Result.UNKNOWN);
+            setResult(RESULT_UNKNOWN);
         }
 
         mCharacteristic.removeCallback(mListener);
@@ -49,15 +51,15 @@ final class ReadCharacteristicAction extends Action {
     private final CharacteristicCallback mListener = (action) -> {
         switch (action) {
             case CharacteristicCallback.EVENT_SECURITY_FAILURE:
-                setResult(Result.BONDING_REQUIRED);
+                setResult(RESULT_BONDING_REQUIRED);
                 finish();
                 break;
             case CharacteristicCallback.EVENT_CHARACTERISTIC_READ_FAILURE:
-                setResult(Result.FAILED);
+                setResult(RESULT_FAILED);
                 finish();
                 break;
             case CharacteristicCallback.EVENT_CHARACTERISTIC_READ:
-                setResult(Result.OK);
+                setResult(RESULT_OK);
                 finish();
                 break;
             default:

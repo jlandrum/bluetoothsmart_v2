@@ -14,14 +14,15 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 import android.support.annotation.Nullable;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
 /**
- * Executes code in an intent pipeline.
+ * Executes code in an action pipeline.
  * The executed action may throw an error, and if it does, should handle the result.
+ * This can be used to take action between characteristic reads and writes.
  */
 final class ExecuteAction extends Action {
     private Execute mExecutor;
@@ -32,7 +33,7 @@ final class ExecuteAction extends Action {
     }
 
     @Override
-    public Result execute(SmartDevice ignored) {
+    public int execute(SmartDevice ignored) {
         return mExecutor.execute();
     }
 
@@ -42,6 +43,6 @@ final class ExecuteAction extends Action {
     }
 
     public interface Execute {
-        Result execute();
+        int execute();
     }
 }

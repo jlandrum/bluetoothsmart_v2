@@ -23,8 +23,7 @@ import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import com.jameslandrum.bluetoothsmart2.ScannerCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
-import com.jameslandrum.bluetoothsmart2.SmartDeviceCallback;
-import com.jameslandrum.bluetoothsmart2.actionqueue.Identifier;
+import com.jameslandrum.bluetoothsmart2.actions.Identifier;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

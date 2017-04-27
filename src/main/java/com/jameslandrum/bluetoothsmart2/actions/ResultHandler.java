@@ -14,12 +14,12 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 /**
  * Executes after an action is completed.
  * Should return false if for some reason, the intent should terminate prematurely.
  */
 public interface ResultHandler {
-    boolean invoke(Action.Result value);
+    boolean invoke(int value);
 }

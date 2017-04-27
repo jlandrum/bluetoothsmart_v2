@@ -18,7 +18,7 @@ package com.jameslandrum.bluetoothsmart2;
 
 import android.app.Application;
 import android.content.Context;
-import com.jameslandrum.bluetoothsmart2.actionqueue.Identifier;
+import com.jameslandrum.bluetoothsmart2.actions.Identifier;
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
 
 import java.lang.ref.WeakReference;
@@ -45,23 +45,6 @@ public enum SmartDeviceManager {
     public static SmartDeviceManager getInstance()
     {
         return INSTANCE;
-    }
-
-    /**
-     * Sets the active context. To handle state, this should be called by the application.
-     * @param activeContext The current application context.
-     */
-    public static void setActiveContext(Application activeContext) {
-        SmartDeviceManager.mActiveContext = new WeakReference<>(activeContext);
-    }
-
-    /**
-     * Gets the current active context.
-     * @return The active context.
-     */
-    public static Context getActiveContext() {
-        if (mActiveContext == null) throw new RuntimeException("Context must be supplied by application class.");
-        return mActiveContext.get();
     }
 
     /**

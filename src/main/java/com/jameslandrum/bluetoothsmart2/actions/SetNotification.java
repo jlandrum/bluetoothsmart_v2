@@ -14,19 +14,22 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import com.jameslandrum.bluetoothsmart2.*;
 
-final class SetNotificationAction extends Action {
+public final class SetNotification extends Action {
+    private static final int RESULT_BONDING_REQUIRED = 0x10;
+    private static final int RESULT_FAILED = 0x11;
+
     private final Characteristic mCharacteristic;
     private final NotificationCallback mNotifyCallback;
     private final int mDescriptorId;
     private final boolean mEnable;
 
-    SetNotificationAction(Characteristic characteristic, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
+    SetNotification(Characteristic characteristic, int descriptorId, boolean enable, ResultHandler handler, NotificationCallback subscription) {
         super(handler);
         mCharacteristic = characteristic;
         mNotifyCallback = subscription;
@@ -35,10 +38,10 @@ final class SetNotificationAction extends Action {
     }
 
     @Override
-    public Result execute(SmartDevice device) {
+    public int execute(SmartDevice device) {
         BluetoothGattCharacteristic characteristic = mCharacteristic.getNativeCharacteristic();
         if (!device.isReady() || !mCharacteristic.isReady()) {
-            setResult(Result.NOT_READY);
+            setResult(RESULT_NOT_READY);
         } else {
             mCharacteristic.addCallback(mListener);
             BluetoothGattDescriptor descriptor = characteristic.getDescriptors().get(mDescriptorId);
@@ -56,23 +59,21 @@ final class SetNotificationAction extends Action {
 
         }
 
-        Result result = getResult();
-        if (result == Result.OK && characteristic != null) {
-        } else {
-            setResult(Result.FAILED);
-        }
-
-        return result;
+        return getResult();
     }
 
     private final CharacteristicCallback mListener = (action) -> {
         switch (action) {
+            case CharacteristicCallback.EVENT_SECURITY_FAILURE:
+                setResult(RESULT_BONDING_REQUIRED);
+                finish();
+                break;
             case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE_FAILURE:
-                setResult(Result.FAILED);
+                setResult(RESULT_FAILED);
                 finish();
                 break;
             case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE:
-                setResult(Result.OK);
+                setResult(RESULT_OK);
                 finish();
                 break;
             default:

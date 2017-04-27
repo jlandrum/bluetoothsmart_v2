@@ -14,25 +14,36 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actionqueue;
+package com.jameslandrum.bluetoothsmart2.actions;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import com.jameslandrum.bluetoothsmart2.*;
 
-final class WriteCharacteristicAction extends Action {
-    private final Characteristic mCharacteristic;
-    private final byte[] mData;
+public final class WriteCharacteristic extends Action {
+    private static final int RESULT_BONDING_REQUIRED = 0x10;
+    private static final int RESULT_FAILED = 0x11;
 
-    WriteCharacteristicAction(Characteristic characteristic, ResultHandler handler, byte[] data) {
+    private final Characteristic mCharacteristic;
+    private byte[] mData;
+
+    public WriteCharacteristic(Characteristic characteristic) {
+        this(characteristic, null, new byte[]{});
+    }
+
+    public WriteCharacteristic(Characteristic characteristic, byte[] data) {
+        this(characteristic, null, data);
+    }
+
+    public WriteCharacteristic(Characteristic characteristic, ResultHandler handler, byte[] data) {
         super(handler);
         mCharacteristic = characteristic;
         mData = data;
     }
 
     @Override
-    public Result execute(SmartDevice device) {
+    public int execute(SmartDevice device) {
         if (!device.isReady()) {
-            setResult(Result.NOT_READY);
+            setResult(RESULT_NOT_READY);
         } else {
             mCharacteristic.addCallback(mListener);
 
@@ -46,7 +57,7 @@ final class WriteCharacteristicAction extends Action {
             } catch (Exception e) {
                 Logging.notice("Write error: %s", e.getMessage());
                 e.printStackTrace();
-                setResult(Result.UNKNOWN);
+                setResult(RESULT_UNKNOWN);
             }
 
             mCharacteristic.removeCallback(mListener);
@@ -58,15 +69,15 @@ final class WriteCharacteristicAction extends Action {
     private final CharacteristicCallback mListener = (action) -> {
         switch (action) {
             case CharacteristicCallback.EVENT_SECURITY_FAILURE:
-                setResult(Result.BONDING_REQUIRED);
+                setResult(RESULT_BONDING_REQUIRED);
                 finish();
                 break;
             case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE_FAILURE:
-                setResult(Result.FAILED);
+                setResult(RESULT_FAILED);
                 finish();
                 break;
             case CharacteristicCallback.EVENT_CHARACTERISTIC_WRITE:
-                setResult(Result.OK);
+                setResult(RESULT_OK);
                 finish();
                 break;
             default:
@@ -77,5 +88,9 @@ final class WriteCharacteristicAction extends Action {
     @Override
     public boolean purge() {
         return true;
+    }
+
+    public void setValue(byte[] value) {
+        mData = value;
     }
 }
