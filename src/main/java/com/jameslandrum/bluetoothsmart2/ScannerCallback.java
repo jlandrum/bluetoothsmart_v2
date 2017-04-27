@@ -22,13 +22,5 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 public interface ScannerCallback {
-    @IntDef({DEVICE_DISCOVERED, DEVICE_UPDATED, DEVICE_BEACONED, DEVICE_FORGOTTEN})
-    @Retention(RetentionPolicy.SOURCE)
-    @interface DeviceEvent {}
-    int DEVICE_DISCOVERED   = 0x00;
-    int DEVICE_UPDATED      = 0x01;
-    int DEVICE_BEACONED     = 0x02;
-    int DEVICE_FORGOTTEN    = 0x03;
-
-    void onDeviceEvent(@DeviceEvent int event, SmartDevice device);
+    <T extends SmartDevice> void onDeviceDiscovered(T device);
 }

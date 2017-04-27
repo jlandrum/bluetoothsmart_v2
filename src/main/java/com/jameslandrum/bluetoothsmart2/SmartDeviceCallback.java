@@ -16,13 +16,5 @@
 
 package com.jameslandrum.bluetoothsmart2;
 
-public interface SmartDeviceCallback {
-    int EVENT_CONNECTED = 0x01;
-    int EVENT_DISCONNECTED = 0x02;
-    int EVENT_SERVICES_DISCOVERED = 0x03;
-    int EVENT_CONNECTION_ERROR = 0x04;
-    int EVENT_NEW_BEACON = 0x05;
-    int EVENT_NEW_ADVERTISEMENT = 0x06;
-
-    void onEvent(int event);
+public interface SmartDeviceCallback<T extends SmartDevice> {
 }

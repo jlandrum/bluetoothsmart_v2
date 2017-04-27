@@ -16,12 +16,14 @@
 
 package com.jameslandrum.bluetoothsmart2.scanner;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import com.jameslandrum.bluetoothsmart2.ScannerCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
+import com.jameslandrum.bluetoothsmart2.SmartDeviceCallback;
 import com.jameslandrum.bluetoothsmart2.actionqueue.Identifier;
 
 import java.lang.annotation.Retention;
@@ -54,15 +56,12 @@ public abstract class DeviceScanner {
     protected static final ConcurrentHashMap<String, SmartDevice> mDevices = new ConcurrentHashMap<>();
     protected static final HashSet<Identifier> mIdentifiers = new HashSet<>();
 
-    public void forgetDevice(SmartDevice device) {
+    public <T extends SmartDevice> void forgetDevice(T device) {
         mInvalidDevices.remove(device.getAddress());
         mDevices.remove(device.getAddress());
-        for (ScannerCallback c : mListeners) {
-            c.onDeviceEvent(ScannerCallback.DEVICE_FORGOTTEN, device);
-        }
     }
 
-    public void injectDevice(SmartDevice device) {
+    public <T extends SmartDevice> void injectDevice(T device) {
         mDevices.remove(device.getAddress());
         mInvalidDevices.remove(device.getAddress());
         mDevices.put(device.getAddress(),device);
@@ -105,14 +104,8 @@ public abstract class DeviceScanner {
             SmartDevice target = mDevices.get(device.getAddress());
             if (isBeacon) {
                 target.onBeacon();
-                for (ScannerCallback c : mListeners) {
-                    c.onDeviceEvent(ScannerCallback.DEVICE_BEACONED, target);
-                }
             } else {
                 target.onAdvertisement(data,rssi);
-                for (ScannerCallback c : mListeners) {
-                    c.onDeviceEvent(ScannerCallback.DEVICE_UPDATED, target);
-                }
             }
         } else if (mEnableDiscovery && !isBeacon) {
             Identifier identifier = null;
@@ -128,14 +121,13 @@ public abstract class DeviceScanner {
 
             if (identifier != null) {
                 try {
-                    Class k = identifier.getDeviceClass();
-                    SmartDevice target = (SmartDevice) k.newInstance();
-                    target.init(device);
+                    Class<? extends SmartDevice> k = identifier.getDeviceClass();
+
+                    SmartDevice target = injectDevice(k, device);
                     target.onAdvertisement(data,rssi);
-                    mDevices.put(device.getAddress(), target);
 
                     for (ScannerCallback c : mListeners) {
-                        c.onDeviceEvent(ScannerCallback.DEVICE_DISCOVERED, target);
+                        c.onDeviceDiscovered(target);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -145,6 +137,31 @@ public abstract class DeviceScanner {
             }
         }
 
+    }
+
+    public <T extends SmartDevice> T injectDevice(Class<T> k, BluetoothDevice device) throws IllegalAccessException, InstantiationException {
+        if (mDevices.containsKey(device.getAddress())) {
+            //noinspection unchecked
+            return (T) mDevices.get(device.getAddress());
+        }
+
+        T target = k.newInstance();
+        target.init(device);
+        mDevices.put(device.getAddress(), target);
+        return target;
+    }
+
+    public <T extends SmartDevice> T injectDevice(Class<T> k, String address) throws IllegalAccessException, InstantiationException
+    {
+        if (mDevices.containsKey(address)) {
+            //noinspection unchecked
+            return (T) mDevices.get(address);
+        }
+
+        T target = k.newInstance();
+        target.init(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address));
+        mDevices.put(address, target);
+        return target;
     }
 
     public void enableDiscovery(boolean enableDiscovery) {

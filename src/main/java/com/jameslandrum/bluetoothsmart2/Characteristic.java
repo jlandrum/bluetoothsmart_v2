@@ -9,8 +9,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Characteristic {
     private BluetoothGattCharacteristic mCharacteristic;
-    private ConcurrentLinkedQueue<NotificationCallback> mNotifications;
-    private ConcurrentLinkedQueue<CharacteristicCallback> mCallbacks;
+    private ConcurrentLinkedQueue<NotificationCallback> mNotifications = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<CharacteristicCallback> mCallbacks = new ConcurrentLinkedQueue<>();
 
     private UUID mService;
     private UUID mHandle;

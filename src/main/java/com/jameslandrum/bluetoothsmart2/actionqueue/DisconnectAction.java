@@ -17,6 +17,7 @@
 package com.jameslandrum.bluetoothsmart2.actionqueue;
 
 import android.support.annotation.Nullable;
+import com.jameslandrum.bluetoothsmart2.OnConnectionStateListener;
 import com.jameslandrum.bluetoothsmart2.SmartDeviceCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
 
@@ -30,7 +31,7 @@ final class DisconnectAction extends Action {
 
     @Override
     public Result execute(SmartDevice device) {
-        if (!device.isReady()) {
+        if (!device.isReady() || !device.isConnected()) {
             setResult(Result.OK);
         } else {
             device.subscribeToUpdates(mListener);
@@ -47,18 +48,19 @@ final class DisconnectAction extends Action {
         return true;
     }
 
-    private final SmartDeviceCallback mListener = (action) -> {
-        switch (action) {
-            case SmartDeviceCallback.EVENT_DISCONNECTED:
-                setResult(Result.OK);
-                finish();
-                break;
-            case SmartDeviceCallback.EVENT_CONNECTION_ERROR:
-                setResult(Result.FAILED);
-                finish();
-                break;
-            default:
-                break;
+    private final OnConnectionStateListener mListener = new OnConnectionStateListener() {
+        @Override
+        public void onConnected(SmartDevice device) {}
+
+        @Override
+        public void onDisconnected(SmartDevice device) {
+            setResult(Result.OK);
+            finish();
+        }
+
+        @Override
+        public void onServicesDiscovered(SmartDevice device) {
+
         }
     };
 }

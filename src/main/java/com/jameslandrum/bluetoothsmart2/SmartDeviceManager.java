@@ -30,64 +30,95 @@ public enum SmartDeviceManager {
 
     private int mActiveMode = DeviceScanner.SCAN_MODE_LOW_LATENCY;
     private int mActiveBatchInterval = 0;
-    private int mYieldMode = DeviceScanner.SCAN_MODE_LOW_POWER;
-    private int mYieldBatchInterval = 15000;
+    private int mPauseMode = DeviceScanner.SCAN_MODE_LOW_POWER;
+    private int mPauseBatchInterval = 15000;
+
     private boolean mIsForeground = true;
     private boolean mIsRunning = false;
     private DeviceScanner mScanner = DeviceScanner.getInstance();
     private static WeakReference<Application> mActiveContext;
 
+    /**
+     * Gets the SmartDeviceManager instance.
+     * @return The singleton instance to SmartDeviceManager.
+     */
     public static SmartDeviceManager getInstance()
     {
         return INSTANCE;
     }
 
+    /**
+     * Sets the active context. To handle state, this should be called by the application.
+     * @param activeContext The current application context.
+     */
     public static void setActiveContext(Application activeContext) {
         SmartDeviceManager.mActiveContext = new WeakReference<>(activeContext);
     }
 
+    /**
+     * Gets the current active context.
+     * @return The active context.
+     */
     public static Context getActiveContext() {
         if (mActiveContext == null) throw new RuntimeException("Context must be supplied by application class.");
         return mActiveContext.get();
     }
 
+    /**
+     * Attemps to start scanning, if permissions are properly granted and Bluetooth is enabled.
+     */
     public void startScan()
     {
         if (mIsForeground) {
             mScanner.startScan(mActiveMode, mActiveBatchInterval);
             Logging.notice("Starting scan in Active mode.");
         } else {
-            mScanner.startScan(mYieldMode, mYieldBatchInterval);
+            mScanner.startScan(mPauseMode, mPauseBatchInterval);
             Logging.notice("Starting scan in Passive mode.");
         }
     }
 
+    /**
+     * Stops scanning.
+     */
     public void stopScan() {
         mScanner.stopScan();
     }
 
-
-    public void setYieldMode(int mode) {
-        setYieldMode(mode, 0);
+    /**
+     * Sets the configuration to use when pause is called.
+     * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_POWER
+     */
+    public void setPauseMode(int mode) {
+        setPauseMode(mode, 0);
     }
 
-    public void setYieldMode(int mode, int batchInterval) {
-        mYieldMode = mode;
-        mYieldBatchInterval = batchInterval;
+    /**
+     * Sets the configuration to use when pause is called.
+     * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_POWER
+     * @param batchInterval How long to delay before reporting advertisements.
+     */
+    public void setPauseMode(int mode, int batchInterval) {
+        mPauseMode = mode;
+        mPauseBatchInterval = batchInterval;
         if (!mIsForeground && mIsRunning) {
             scanParametersChanged();
         }
     }
 
-    private void scanParametersChanged() {
-        Logging.notice("Scan parameters have changed. Restarting scanning.");
-        startScan();
-    }
-
+    /**
+     * Sets the mode to use in active mode.
+     * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_LATENCY
+     */
     public void setActiveMode(int mode) {
         setActiveMode(mode, 0);
     }
 
+    /**
+     * Sets the mode to use in active mode.
+     * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_LATENCY
+     * @param batchInterval How long to delay before reporting advertisements.
+     */
     public void setActiveMode(int mode, int batchInterval) {
         mActiveMode = mode;
         mActiveBatchInterval = batchInterval;
@@ -96,10 +127,18 @@ public enum SmartDeviceManager {
         }
     }
 
+    /**
+     * Adds an identifier, which is an object used to determine the Java object type of a given device.
+     * @param identifier An identifier build using Identifier.Builder()
+     */
     public void addIdentifier(Identifier identifier) {
         mScanner.addIdentifier(identifier);
     }
 
+    /**
+     * Adds a listener that watches for new devices, as well as devices that are out of range.
+     * @param scannerListener
+     */
     public void addScanListener(ScannerCallback scannerListener) {
         mScanner.addScanListener(scannerListener);
     }
@@ -138,4 +177,14 @@ public enum SmartDeviceManager {
     public void enableDiscovery(boolean b) {
         mScanner.enableDiscovery(b);
     }
+
+    public <T extends SmartDevice> T injectDevice(Class<T> deviceType, String address) throws InstantiationException, IllegalAccessException {
+        return mScanner.injectDevice(deviceType, address);
+    }
+
+    private void scanParametersChanged() {
+        Logging.notice("Scan parameters have changed. Restarting scanning.");
+        startScan();
+    }
+
 }

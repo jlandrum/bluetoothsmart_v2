@@ -24,6 +24,8 @@ import com.jameslandrum.bluetoothsmart2.actionqueue.Intention;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @SuppressWarnings("unused")
@@ -35,16 +37,31 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     private HashSet<Characteristic> mCharacteristics = new HashSet<>();
 
-    private ConcurrentLinkedQueue<SmartDeviceCallback> mListeners = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<OnConnectionStateListener> mConnectionListeners = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<OnDeviceUpdateListener> mUpdateListeners = new ConcurrentLinkedQueue<>();
+
     private BluetoothGatt mActiveConnection;
     private boolean mServicesDiscovered;
     private byte[] mAdvertisement = new byte[62];
-    private int mRssi;
+    private int mRssi = -120;
     private long mLastSeen;
     private boolean mConnected;
 
+    private Timer mRssiAdjuster = new Timer();
+
     public void init(BluetoothDevice device) {
         mDevice = device;
+        mRssiAdjuster.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (mLastSeen < System.currentTimeMillis() - 15000) {
+                    mRssi = (mRssi * 5 - 120) / 5;
+                    for (OnDeviceUpdateListener l : mUpdateListeners) {
+                        l.onDeviceUpdated(SmartDevice.this);
+                    }
+                }
+            }
+        }, 5000, 5000);
     }
 
     final public void registerCharacteristics(Characteristic ... characteristics) {
@@ -76,13 +93,13 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             Logging.notice("Device %s connected.", this.getClass().getSimpleName());
             mActiveConnection = gatt;
             mActiveConnection.discoverServices();
-            for (SmartDeviceCallback d : mListeners) {
-                d.onEvent(SmartDeviceCallback.EVENT_CONNECTED);
+            for (OnConnectionStateListener d : mConnectionListeners) {
+                d.onConnected(this);
             }
         } else {
             for (Characteristic c : mCharacteristics) { c.clearAllCallbacks(); }
             Logging.notice("Device %s disconnected.", this.getClass().getSimpleName());
-            for (SmartDeviceCallback d : mListeners) { d.onEvent(SmartDeviceCallback.EVENT_DISCONNECTED); }
+            for (OnConnectionStateListener d : mConnectionListeners) { d.onDisconnected( this); }
             for (Characteristic characteristic : mCharacteristics) characteristic.reset();
             mActiveConnection = null;
             gatt.close();
@@ -111,7 +128,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             }
 
             mServicesDiscovered = true;
-            for (SmartDeviceCallback c : mListeners) { c.onEvent(SmartDeviceCallback.EVENT_SERVICES_DISCOVERED); }
+            for (OnConnectionStateListener c : mConnectionListeners) { c.onServicesDiscovered(this); }
         } catch (Exception e) {
             e.printStackTrace();
             disconnect();
@@ -171,12 +188,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         return mServicesDiscovered && mActiveConnection != null;
     }
 
-    public void subscribeToUpdates(SmartDeviceCallback listener) {
-        mListeners.add(listener);
+    public void subscribeToUpdates(OnConnectionStateListener listener) {
+        mConnectionListeners.add(listener);
     }
 
-    public void unsubscribeToUpdates(SmartDeviceCallback listener) {
-        mListeners.remove(listener);
+    public void unsubscribeToUpdates(OnConnectionStateListener listener) {
+        mConnectionListeners.remove(listener);
     }
 
     public String getAddress() {
@@ -192,6 +209,9 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         mAdvertisement = data;
         System.arraycopy(data, 0, mAdvertisement, 0, mAdvertisement.length);
         mRssi = rssi;
+        for (OnDeviceUpdateListener updateListener : mUpdateListeners) {
+            updateListener.onDeviceUpdated(this);
+        }
     }
 
     public int getRssi() {
@@ -211,5 +231,19 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         return mConnected;
     }
 
-    public abstract void onBeacon();
+    public void onBeacon() {}
+
+    public void addOnUpdateListener(OnDeviceUpdateListener listener) {
+        if (!mUpdateListeners.contains(listener)) {
+            mUpdateListeners.add(listener);
+        }
+    }
+
+    public void removeOnUpdateListener(OnDeviceUpdateListener listener) {
+        mUpdateListeners.remove(listener);
+    }
+
+    private void setRssi(int rssi) {
+        this.mRssi = rssi;
+    }
 }
