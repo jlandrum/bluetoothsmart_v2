@@ -54,7 +54,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             @Override
             public void run() {
                 if (mLastSeen < System.currentTimeMillis() - 15000) {
-                    mRssi = (mRssi * 5 - 120) / 5;
+                    mRssi = (mRssi * 4 - 120) / 5;
                     for (OnDeviceUpdateListener l : mUpdateListeners) {
                         l.onDeviceUpdated(SmartDevice.this);
                     }
@@ -129,6 +129,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             updateListener.onDeviceUpdated(this);
         }
         onAdvertisement();
+    }
+
+    public void pushUpdate() {
+        for (OnDeviceUpdateListener updateListener : mUpdateListeners) {
+            updateListener.onDeviceUpdated(this);
+        }
     }
 
     public void onAdvertisement() {}
@@ -255,5 +261,12 @@ public abstract class SmartDevice extends BluetoothGattCallback {
                 break;
             }
         }
+    }
+
+    public String getName() {
+        if (getDevice().getName() == null || getDevice().getName().isEmpty()) {
+            return getAddress();
+        }
+        return getDevice().getName();
     }
 }

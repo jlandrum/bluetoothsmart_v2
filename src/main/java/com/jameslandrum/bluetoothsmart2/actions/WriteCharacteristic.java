@@ -90,11 +90,6 @@ public final class WriteCharacteristic extends Action {
         }
     };
 
-    @Override
-    public boolean purge() {
-        return true;
-    }
-
     public void setValue(byte[] value) {
         mData = value;
     }

@@ -80,9 +80,4 @@ public final class SetNotification extends Action {
                 break;
         }
     };
-
-    @Override
-    public boolean purge() {
-        return true;
-    }
 }

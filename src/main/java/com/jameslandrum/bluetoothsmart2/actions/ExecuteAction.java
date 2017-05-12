@@ -37,11 +37,6 @@ final class ExecuteAction extends Action {
         return mExecutor.execute();
     }
 
-    @Override
-    public boolean purge() {
-        return true;
-    }
-
     public interface Execute {
         int execute();
     }

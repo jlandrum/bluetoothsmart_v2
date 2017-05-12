@@ -43,11 +43,6 @@ public final class Disconnect extends Action {
         return getResult();
     }
 
-    @Override
-    public boolean purge() {
-        return true;
-    }
-
     private final OnConnectionStateListener mListener = new OnConnectionStateListener() {
         @Override
         public void onConnected(SmartDevice device) {}

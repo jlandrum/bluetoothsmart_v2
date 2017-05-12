@@ -38,6 +38,8 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
     }
 
     private class Executor extends Thread {
+        Action mActiveAction;
+
         @Override
         public void run() {
             Logging.notice("ActionRunner thread has started.");
@@ -45,7 +47,7 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
                 try {
                     if (!mActions.isEmpty()) {
                         Logging.notice("ActionRunner action started.");
-                        Action mActiveAction = mActions.remove();
+                        mActiveAction = mActions.remove();
                         if (!mActiveAction.handleResult(mActiveAction.execute(mDevice))) {
                             mActions.clear();
                         }
@@ -57,6 +59,7 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
                         if (mActions.isEmpty()) interrupt();
                     }
                 } catch (InterruptedException ignored) {
+                    mActiveAction.cancel();
                 }
             }
             Logging.notice("ActionRunner thread has terminated.");

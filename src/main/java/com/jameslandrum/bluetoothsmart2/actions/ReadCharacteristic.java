@@ -66,9 +66,4 @@ public final class ReadCharacteristic extends Action {
                 break;
         }
     };
-
-    @Override
-    public boolean purge() {
-        return true;
-    }
 }

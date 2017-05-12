@@ -26,6 +26,7 @@ public abstract class Action {
     public static final int RESULT_UNKNOWN      = 0x00;
     public static final int RESULT_TIMED_OUT    = 0xFF;
     public static final int RESULT_NOT_READY    = 0xFE;
+    public static final int RESULT_CANCELLED    = 0xFD;
 
     private ResultHandler mResultHandler = (code)->code==RESULT_OK;
     private final Object mLock = new Object();
@@ -86,6 +87,9 @@ public abstract class Action {
         return mResult;
     }
 
+    void cancel() {
+        setResult(RESULT_CANCELLED);
+    }
+
     abstract int execute(SmartDevice device);
-    abstract boolean purge();
 }
