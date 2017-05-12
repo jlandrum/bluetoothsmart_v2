@@ -30,10 +30,7 @@ public enum SmartDeviceManager {
 
     private int mActiveMode = DeviceScanner.SCAN_MODE_LOW_LATENCY;
     private int mActiveBatchInterval = 0;
-    private int mPauseMode = DeviceScanner.SCAN_MODE_LOW_POWER;
-    private int mPauseBatchInterval = 15000;
 
-    private boolean mIsForeground = true;
     private boolean mIsRunning = false;
     private DeviceScanner mScanner = DeviceScanner.getInstance();
     private static WeakReference<Application> mActiveContext;
@@ -52,13 +49,8 @@ public enum SmartDeviceManager {
      */
     public void startScan()
     {
-        if (mIsForeground) {
-            mScanner.startScan(mActiveMode, mActiveBatchInterval);
-            Logging.notice("Starting scan in Active mode.");
-        } else {
-            mScanner.startScan(mPauseMode, mPauseBatchInterval);
-            Logging.notice("Starting scan in Passive mode.");
-        }
+        mScanner.startScan(mActiveMode, mActiveBatchInterval);
+        Logging.notice("Starting scan in Active mode.");
     }
 
     /**
@@ -69,28 +61,7 @@ public enum SmartDeviceManager {
     }
 
     /**
-     * Sets the configuration to use when pause is called.
-     * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_POWER
-     */
-    public void setPauseMode(int mode) {
-        setPauseMode(mode, 0);
-    }
-
-    /**
-     * Sets the configuration to use when pause is called.
-     * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_POWER
-     * @param batchInterval How long to delay before reporting advertisements.
-     */
-    public void setPauseMode(int mode, int batchInterval) {
-        mPauseMode = mode;
-        mPauseBatchInterval = batchInterval;
-        if (!mIsForeground && mIsRunning) {
-            scanParametersChanged();
-        }
-    }
-
-    /**
-     * Sets the mode to use in active mode.
+     * Sets the mode to use when scanning.
      * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_LATENCY
      */
     public void setActiveMode(int mode) {
@@ -98,14 +69,14 @@ public enum SmartDeviceManager {
     }
 
     /**
-     * Sets the mode to use in active mode.
+     * Sets the mode to use when scanning.
      * @param mode The scan mode to use. Defaults to DeviceScanner.SCAN_MODE_LOW_LATENCY
      * @param batchInterval How long to delay before reporting advertisements.
      */
     public void setActiveMode(int mode, int batchInterval) {
         mActiveMode = mode;
         mActiveBatchInterval = batchInterval;
-        if (mIsForeground && mIsRunning) {
+        if (mIsRunning) {
             scanParametersChanged();
         }
     }
@@ -128,18 +99,6 @@ public enum SmartDeviceManager {
 
     public void removeScanListener(ScannerCallback scannerListener) {
         mScanner.removeScanListener(scannerListener);
-    }
-
-    public void wake() {
-        Logging.notice("Resuming Scanning");
-        mIsForeground = true;
-        scanParametersChanged();
-    }
-
-    public void sleep() {
-        Logging.notice("Yielding Scanning");
-        mIsForeground = false;
-        scanParametersChanged();
     }
 
     public List<SmartDevice> getAllDevices() {

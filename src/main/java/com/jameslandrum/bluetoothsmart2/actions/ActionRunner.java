@@ -59,7 +59,7 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
                         if (mActions.isEmpty()) interrupt();
                     }
                 } catch (InterruptedException ignored) {
-                    mActiveAction.cancel();
+                    if (mActiveAction != null && mActiveAction.cancelled()) mActiveAction.cancel();
                 }
             }
             Logging.notice("ActionRunner thread has terminated.");

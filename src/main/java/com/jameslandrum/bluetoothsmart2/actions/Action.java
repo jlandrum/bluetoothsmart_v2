@@ -31,6 +31,7 @@ public abstract class Action {
     private ResultHandler mResultHandler = (code)->code==RESULT_OK;
     private final Object mLock = new Object();
     private int mResult = RESULT_UNKNOWN;
+    private boolean mCancelled = false;
 
     /**
      * Creates a new instanc
@@ -89,7 +90,13 @@ public abstract class Action {
 
     void cancel() {
         setResult(RESULT_CANCELLED);
+        mCancelled = true;
+        finish();
     }
 
     abstract int execute(SmartDevice device);
+
+    public boolean cancelled() {
+        return mCancelled;
+    }
 }
