@@ -58,6 +58,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
                     for (OnDeviceUpdateListener l : mUpdateListeners) {
                         l.onDeviceUpdated(SmartDevice.this);
                     }
+                    onUpdate();
                 }
             }
         }, 5000, 5000);
@@ -128,6 +129,7 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         for (OnDeviceUpdateListener updateListener : mUpdateListeners) {
             updateListener.onDeviceUpdated(this);
         }
+        onUpdate();
         onAdvertisement();
     }
 
@@ -135,13 +137,15 @@ public abstract class SmartDevice extends BluetoothGattCallback {
         for (OnDeviceUpdateListener updateListener : mUpdateListeners) {
             updateListener.onDeviceUpdated(this);
         }
+        onUpdate();
     }
 
     public void onAdvertisement() {}
     public void onBeacon() {}
-    public void onConnect() {};
-    public void onDisconnect() {};
-    public void onReady() {};
+    public void onConnect() {}
+    public void onDisconnect() {}
+    public void onReady() {}
+    public void onUpdate() {}
 
     public void addOnUpdateListener(OnDeviceUpdateListener listener) {
         if (!mUpdateListeners.contains(listener)) {
