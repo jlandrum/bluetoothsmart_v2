@@ -91,7 +91,16 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
 
     public void addAction(Action action, Context context)
     {
-        mActions.add(action);
+        addAction(action, null, context);
+    }
+
+    public void addAction(Action action, ResultHandler handler, Context context)
+    {
+        if (handler != null) {
+            mActions.add(new HandlerWrapper(action, handler));
+        } else {
+            mActions.add(action);
+        }
 
         if (mExecutor == null) {
             mExecutor = new Executor();

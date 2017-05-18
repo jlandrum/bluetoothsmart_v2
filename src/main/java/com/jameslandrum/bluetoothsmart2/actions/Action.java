@@ -45,6 +45,10 @@ public abstract class Action {
         return mResultHandler.invoke(resultCode);
     }
 
+    void setResultHandler(ResultHandler resultHandler) {
+        mResultHandler = resultHandler;
+    }
+
     void setResult(int result) {
         mResult = result;
     }

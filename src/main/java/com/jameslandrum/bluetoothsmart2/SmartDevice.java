@@ -20,6 +20,7 @@ import android.bluetooth.*;
 import android.content.Context;
 import com.jameslandrum.bluetoothsmart2.actions.Action;
 import com.jameslandrum.bluetoothsmart2.actions.ActionRunner;
+import com.jameslandrum.bluetoothsmart2.actions.ResultHandler;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -79,6 +80,10 @@ public abstract class SmartDevice extends BluetoothGattCallback {
 
     final protected void doAction(Action action, Context context) {
         mActionRunner.addAction(action, context);
+    }
+
+    final protected void doAction(Action action, ResultHandler resultHandler, Context context) {
+        mActionRunner.addAction(action, resultHandler, context);
     }
 
     final public long getConnectionTimeout() { return mConnectionTimeout; }
