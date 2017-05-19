@@ -62,6 +62,9 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
                     if (mActiveAction != null && mActiveAction.cancelled()) mActiveAction.cancel();
                 }
             }
+            if (!mActions.isEmpty()) {
+                mActions.peek().triggerFailure();
+            }
             Logging.notice("ActionRunner thread has terminated.");
             mDevice.disconnect();
             mActions.clear();
@@ -75,6 +78,7 @@ public final class ActionRunner extends Thread implements OnConnectionStateListe
     @Override
     public void onDisconnected(SmartDevice device) {
         if (mExecutor != null) {
+            if (!mExecutor.isAlive()) mExecutor.start();
             mExecutor.interrupt();
             synchronized (mLock) {
                 mLock.notify();

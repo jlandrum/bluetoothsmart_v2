@@ -100,7 +100,11 @@ public abstract class Action {
 
     abstract int execute(SmartDevice device);
 
-    public boolean cancelled() {
+    boolean cancelled() {
         return mCancelled;
+    }
+
+    void triggerFailure() {
+        mResultHandler.invoke(RESULT_CANCELLED);
     }
 }

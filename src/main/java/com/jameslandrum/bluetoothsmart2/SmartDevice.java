@@ -189,6 +189,10 @@ public abstract class SmartDevice extends BluetoothGattCallback {
             for (Characteristic characteristic : mCharacteristics) characteristic.reset();
             mActiveConnection = null;
             gatt.close();
+        } else if (newState != BluetoothAdapter.STATE_CONNECTED || status == 133) {
+            for (OnConnectionStateListener d : mConnectionListeners) {
+                d.onDisconnected(this);
+            }
         }
         mConnected = newState == BluetoothAdapter.STATE_CONNECTED;
     }
