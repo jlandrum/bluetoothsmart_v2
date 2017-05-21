@@ -1,5 +1,6 @@
 package com.jameslandrum.bluetoothsmart2
 
+import java.util.*
 import java.util.regex.Pattern
 
 class Uuid {
@@ -9,7 +10,14 @@ class Uuid {
         private val PATTERN_PARTIAL = Pattern.compile("([0-F]{4})?([0-F]{4})(-0{4}-0{4}-0{4}-0{12})?", Pattern.CASE_INSENSITIVE)
     }
 
-    constructor(service: String, char: String) {}
-    constructor(char: String) : this(CORE_UUID, char)
+    val uuid : UUID
 
+    constructor(char: String) : this(CORE_UUID, char)
+    constructor(service: String, char: String) {
+        uuid = UUID.fromString(char)
+    }
+
+    override fun hashCode(): Int {
+        return uuid.hashCode()
+    }
 }
