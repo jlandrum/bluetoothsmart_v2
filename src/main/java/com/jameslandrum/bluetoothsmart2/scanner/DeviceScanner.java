@@ -61,10 +61,11 @@ public abstract class DeviceScanner {
         mDevices.remove(device.getAddress());
     }
 
-    public <T extends SmartDevice> void injectDevice(T device) {
+    public <T extends SmartDevice> T injectDevice(T device) {
         mDevices.remove(device.getAddress());
         mInvalidDevices.remove(device.getAddress());
         mDevices.put(device.getAddress(),device);
+        return device;
     }
 
     /**
@@ -115,7 +116,7 @@ public abstract class DeviceScanner {
                 for (UUID uuid: i.getUuids()) {
                     if (!uuids.contains(uuid)) continue getId;
                 }
-                if (i.getByteId() != null && !i.getByteId().checkBytes(data)) continue;
+                if (!i.getByteId().invoke(data)) continue;
                 identifier = i;
             }
 

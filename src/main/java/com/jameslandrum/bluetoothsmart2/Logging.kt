@@ -14,7 +14,19 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2;
+package com.jameslandrum.bluetoothsmart2
 
-public interface SmartDeviceCallback<T extends SmartDevice> {
+import android.util.Log
+
+/**
+ * Handles logging for BluetoothSmart specific events.
+ */
+object Logging {
+    fun notice(s: String, vararg data: Any) {
+        Log.d("BluetoothSmart", String.format(s, *data))
+    }
+
+    fun error(s: String, vararg data: Any) {
+        Log.e("BluetoothSmart", String.format(s, *data))
+    }
 }
