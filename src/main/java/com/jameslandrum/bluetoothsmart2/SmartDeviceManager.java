@@ -17,11 +17,10 @@
 package com.jameslandrum.bluetoothsmart2;
 
 import android.app.Application;
-import android.content.Context;
-import com.jameslandrum.bluetoothsmart2.actions.Identifier;
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 @SuppressWarnings("ALL")
@@ -112,7 +111,6 @@ public enum SmartDeviceManager {
     }
 
     public SmartDevice getDeviceByMac(String macAddress) {
-
         return mScanner.getDeviceByMacAddress(macAddress);
     }
 
@@ -120,7 +118,7 @@ public enum SmartDeviceManager {
         mScanner.enableDiscovery(b);
     }
 
-    public <T extends SmartDevice> T injectDevice(Class<T> deviceType, String address) throws InstantiationException, IllegalAccessException {
+    public <T extends SmartDevice> T injectDevice(Class<T> deviceType, String address) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         return mScanner.injectDevice(deviceType, address);
     }
 

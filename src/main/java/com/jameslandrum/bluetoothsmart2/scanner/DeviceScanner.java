@@ -23,10 +23,11 @@ import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import com.jameslandrum.bluetoothsmart2.ScannerCallback;
 import com.jameslandrum.bluetoothsmart2.SmartDevice;
-import com.jameslandrum.bluetoothsmart2.actions.Identifier;
+import com.jameslandrum.bluetoothsmart2.Identifier;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -138,29 +139,19 @@ public abstract class DeviceScanner {
 
     }
 
-    public <T extends SmartDevice> T injectDevice(Class<T> k, BluetoothDevice device) throws IllegalAccessException, InstantiationException {
+    @SuppressWarnings("unchecked")
+    public <T extends SmartDevice> T injectDevice(Class<T> k, BluetoothDevice device) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         if (mDevices.containsKey(device.getAddress())) {
-            //noinspection unchecked
             return (T) mDevices.get(device.getAddress());
         }
 
-        T target = k.newInstance();
-        target.init(device);
+        T target = k.getConstructor(BluetoothDevice.class).newInstance(device);
         mDevices.put(device.getAddress(), target);
         return target;
     }
 
-    public <T extends SmartDevice> T injectDevice(Class<T> k, String address) throws IllegalAccessException, InstantiationException
-    {
-        if (mDevices.containsKey(address)) {
-            //noinspection unchecked
-            return (T) mDevices.get(address);
-        }
-
-        T target = k.newInstance();
-        target.init(BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address));
-        mDevices.put(address, target);
-        return target;
+    public <T extends SmartDevice> T injectDevice(Class<T> k, String address) throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        return this.injectDevice(k, BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address));
     }
 
     public void enableDiscovery(boolean enableDiscovery) {

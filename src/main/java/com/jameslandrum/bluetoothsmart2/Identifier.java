@@ -14,10 +14,7 @@
   limitations under the License.
  */
 
-package com.jameslandrum.bluetoothsmart2.actions;
-
-import com.jameslandrum.bluetoothsmart2.SmartDevice;
-import com.jameslandrum.bluetoothsmart2.UUID2;
+package com.jameslandrum.bluetoothsmart2;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -81,7 +78,7 @@ public final class Identifier {
          * @return This builder.
          */
         public Builder uuid(String uuid) {
-            identifier.mUuids.add(new UUID2(uuid).getUuid());
+            identifier.mUuids.add(new Uuid(uuid).getUuid());
             return this;
         }
 

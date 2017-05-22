@@ -16,11 +16,6 @@
 
 package com.jameslandrum.bluetoothsmart2;
 
-import android.support.annotation.IntDef;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 public interface ScannerCallback {
     <T extends SmartDevice> void onDeviceDiscovered(T device);
 }
