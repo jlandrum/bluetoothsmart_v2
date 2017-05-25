@@ -37,15 +37,6 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
     }
 
     fun diconnect() = activeConnection?.disconnect()
-//
-//    fun characteristic(handle : CharHandle, with: Characteristic.()->Unit = {}) : Unit
-//            = characteristic(handle.serviceUuid, handle.charUuid, with)
-//    fun characteristic(service: String, id : String, with: Characteristic.()->Unit = {}) : Unit
-//            = characteristic(Uuid(id),Uuid(service,id), with)
-//    fun characteristic(service : Uuid, id : Uuid, with: Characteristic.()->Unit = {}) : Unit {
-//        val char = characteristics.find { it.id.uuid == service.uuid && it.service.uuid == id.uuid }
-//        with(char!!)
-//    }
 
     override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
         when (newState) {

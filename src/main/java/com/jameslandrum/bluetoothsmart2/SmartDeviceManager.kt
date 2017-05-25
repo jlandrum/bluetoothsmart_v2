@@ -16,6 +16,8 @@
 package com.jameslandrum.bluetoothsmart2;
 
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
+import java.util.*
+import kotlin.concurrent.timerTask
 
 @SuppressWarnings("ALL")
 enum class SmartDeviceManager {
