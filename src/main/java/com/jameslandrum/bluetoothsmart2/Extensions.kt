@@ -20,6 +20,7 @@ fun Short.asBytes(littleEndian : Boolean = false) = this.asBytes(2,littleEndian)
 fun Int.asBytes(littleEndian : Boolean = false) = this.asBytes(4,littleEndian)
 fun Long.asBytes(littleEndian : Boolean = false) = this.asBytes(8,littleEndian)
 fun String.asBytes(encoding: String = "UTF-8") = this.toByteArray(java.nio.charset.Charset.forName(encoding))
+fun Boolean.asBytes() = (if (this) 1 else 0).asBytes(1)
 
 infix fun ByteArray.byte(id : Int) = this[id]
 infix fun Byte.bit(i : Int) = 0b1.shl(i).and(this.toInt()) == 0b1.shl(i)

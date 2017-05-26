@@ -47,6 +47,7 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
             }
             BluetoothGatt.STATE_DISCONNECTED -> {
                 connectionCallbacks.forEach { it.invoke(false) }
+                onDisconnect()
                 connected = false
             }
         }
@@ -65,8 +66,12 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         connected = true
         super.onServicesDiscovered(gatt, status)
+        onConnect()
         connectionCallbacks.forEach { it.invoke(true) }
     }
+
+    open fun onConnect() {}
+    open fun onDisconnect() {}
 
     fun updateAdvertisement(data : ByteArray, rssi : Int) {
         System.arraycopy(data, 0, advertisement, 0, data.size)
