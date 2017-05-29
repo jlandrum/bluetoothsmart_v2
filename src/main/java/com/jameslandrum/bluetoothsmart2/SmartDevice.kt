@@ -5,35 +5,45 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
+import android.util.Log
+import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.experimental.channels.Channel
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ConcurrentSkipListSet
+import kotlin.concurrent.thread
 
 abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCallback() {
     internal var activeConnection : BluetoothGatt? = null
     private var servicesDiscovered : Boolean = false
     private var characteristicCallbacks = ConcurrentHashMap<CharHandle,(ByteArray)->Unit>()
     private var queue = ConcurrentLinkedQueue<()->Unit>()
-    private var actionCallback : ((Boolean)->Unit)? = null
 
     val address : String get() = nativeDevice.address
     val advertisement = ByteArray(62)
     var lastSeen : Long = 0L
     var connecting = false
     var connected = false
-    val connectionCallbacks = ArrayList<((Boolean) -> Unit)>()
+    private val connectionCallbacks = ArrayList<((Boolean) -> Unit)>()
 
     val connectedOrConnecting : Boolean get() = connected || connecting
 
     var rssi : Int = -120
     var updateListeners = ConcurrentLinkedQueue<UpdateListener>()
 
-    var executionThread : ExecutionThread? = null
+    private var actionQueue = ActionQueue()
+    internal var channel : Channel<Boolean> = Channel<Boolean>()
+    var thread = newSingleThreadContext("ActionThread_" + nativeDevice.address)
 
-    fun connect(context: Context, autoConnect: Boolean = false) {
-        nativeDevice.connectGatt(context, autoConnect, this)
+    fun connect(context: Context, autoConnect: Boolean = false, callback: (Boolean) -> Unit) {
+        if (connected) {
+            callback.invoke(true)
+        } else {
+            connectionCallbacks += callback
+            nativeDevice.connectGatt(context, autoConnect, this)
+        }
     }
 
     fun diconnect() = activeConnection?.disconnect()
@@ -46,7 +56,7 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
                 connecting = false
             }
             BluetoothGatt.STATE_DISCONNECTED -> {
-                connectionCallbacks.forEach { it.invoke(false) }
+                connectionCallbacks.forEach { it.invoke(false); connectionCallbacks -= it }
                 onDisconnect()
                 connected = false
             }
@@ -54,13 +64,15 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
         when (status) {
             133 -> {
                 connected = false
-                connectionCallbacks.forEach { it.invoke(false) }
+                connectionCallbacks.forEach { it.invoke(false); connectionCallbacks -= it  }
             }
         }
     }
 
     override fun onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
-        invokeActionCallback(status == BluetoothGatt.GATT_SUCCESS)
+        launch(thread) {
+            channel.send(status == BluetoothGatt.GATT_SUCCESS)
+        }
     }
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
@@ -84,15 +96,19 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
      * Creates a queue of actions to be executed in a timely manner.
      * This is the recommended way to invoke characteristic changes.
      */
-    protected fun post(context: Context, function: QueueBuilder.() -> Unit)  {
+    protected fun post(function: QueueBuilder.() -> Unit)  {
         val builder = QueueBuilder()
         builder.function()
-
-        if (!(executionThread?.isAlive?:false)) {
-            executionThread = ExecutionThread(this,context, builder.failure)
-        }
-        executionThread?.queues?.add(builder.queue)
+        actionQueue.addAll(builder.queue)
+        executeQueue()
     }
+
+    fun executeQueue() = async(thread) {
+        while (actionQueue.isNotEmpty()) {
+            actionQueue.remove().invoke(this@SmartDevice).join()
+        }
+    }
+
 
     fun postUpdate() {
         updateListeners.forEach { it.onDeviceUpdated(this) }
@@ -103,30 +119,25 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
 
     fun onBeacon() {}
 
-    fun writeCharacteristic(char: BluetoothGattCharacteristic, callback: ((Boolean)->Unit)) {
-        actionCallback = callback
-        activeConnection?.writeCharacteristic(char)?:invokeActionCallback(false)
-    }
-
-    private fun invokeActionCallback(res:Boolean) {
-        actionCallback?.invoke(res)
-        actionCallback = null
+    fun disconnect() {
+        activeConnection?.disconnect()
     }
 }
 
 class QueueBuilder {
-    val queue = ConcurrentLinkedQueue<CharAction>()
+    val queue = ActionQueue()
 
     fun write(charHandle: CharHandle, value: ByteArray, result: (Boolean) -> Unit = {}) {
         queue.add(CharWrite(charHandle, value, result))
     }
 
+    fun connect(context: Context, result: (Boolean) -> Unit = {}) {
+        queue.add(Connect(context, result))
+    }
+
     fun read(charHandle: CharHandle, result: (Boolean, ByteArray) -> Unit ) {
 
     }
-
-    var failure: (()->Unit)? = null
-    infix fun failure(g: ()->Unit) { failure = g }
 }
 
 interface UpdateListener {
@@ -137,3 +148,6 @@ interface CharHandle {
     var charUuid : Uuid
     var serviceUuid : Uuid
 }
+
+typealias ActionQueue = ConcurrentLinkedQueue<CharAction>
+
