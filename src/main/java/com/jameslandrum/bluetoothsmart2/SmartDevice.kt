@@ -5,15 +5,11 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
-import android.util.Log
 import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.channels.Channel
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.ConcurrentSkipListSet
-import kotlin.concurrent.thread
 
 abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCallback() {
     internal var activeConnection : BluetoothGatt? = null
@@ -53,17 +49,19 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
             BluetoothGatt.STATE_CONNECTED -> {
                 activeConnection = gatt
                 activeConnection!!.discoverServices()
-                connecting = false
+                connecting = true
             }
             BluetoothGatt.STATE_DISCONNECTED -> {
                 connectionCallbacks.forEach { it.invoke(false); connectionCallbacks -= it }
                 onDisconnect()
                 connected = false
+                connecting = false
             }
         }
         when (status) {
             133 -> {
                 connected = false
+                connecting = false
                 connectionCallbacks.forEach { it.invoke(false); connectionCallbacks -= it  }
             }
         }
@@ -77,6 +75,7 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
 
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         connected = true
+        connecting = false
         super.onServicesDiscovered(gatt, status)
         onConnect()
         connectionCallbacks.forEach { it.invoke(true) }
