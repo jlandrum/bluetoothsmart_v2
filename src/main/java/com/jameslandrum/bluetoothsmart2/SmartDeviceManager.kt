@@ -16,8 +16,7 @@
 package com.jameslandrum.bluetoothsmart2;
 
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
-import java.util.*
-import kotlin.concurrent.timerTask
+import com.jameslandrum.bluetoothsmart2.scanner.ScannerCallback
 
 @SuppressWarnings("ALL")
 enum class SmartDeviceManager {
@@ -29,7 +28,7 @@ enum class SmartDeviceManager {
         set(value) { field = value; scanParametersChanged() }
 
     private var isRunning = false
-    private var scanner = DeviceScanner.getInstance()
+    private var scanner = DeviceScanner.instance
 
     /**
      * Attemps to start scanning, if permissions are properly granted and Bluetooth is enabled.
@@ -55,36 +54,24 @@ enum class SmartDeviceManager {
         scanner.addIdentifier(identifier)
     }
 
-    /**
-     * Adds a listener that watches for new devices, as well as devices that are out of range.
-     * @param scannerListener
-     */
-    fun addScanListener(scannerListener: ScannerCallback) {
-        scanner.addScanListener(scannerListener)
-    }
-
-    fun removeScanListener(scannerListener: ScannerCallback) {
-        scanner.removeScanListener(scannerListener)
-    }
-
     fun getAllDevices() : List<SmartDevice> {
-        return scanner.allDevices
+        return scanner.getAllDevices()
     }
 
     fun cleanup(staleTime: Int) {
-        scanner.allDevices
+        scanner.getAllDevices()
                 .filter { System.currentTimeMillis() - it.lastSeen > staleTime; }
                 .forEach { scanner.forgetDevice(it) }
     }
 
-    fun getDeviceByMac(address: String) = scanner.allDevices.find { it.address == address }
+    fun getDeviceByMac(address: String) = scanner.getAllDevices().find { it.address == address }
 
     fun enableDiscovery(b : Boolean) {
-        scanner.enableDiscovery(b)
+        scanner.discovery = b
     }
 
-    fun <T: SmartDevice> injectDevice(type: Class<T>, address: String) : T = scanner.injectDevice<T>(type, address)
-    fun <T: SmartDevice> injectDevice(device: T) : T = scanner.injectDevice<T>(device)
+    fun <T: SmartDevice> injectDevice(type: Class<T>, address: String) : SmartDevice = scanner.injectDevice(type, address)
+    fun <T: SmartDevice> injectDevice(device: T) : SmartDevice = scanner.injectDevice<T>(device)
 
     fun scanParametersChanged() {
         Logging.notice("Scan Parameters Changed, Restarting Scan If Necessary")
