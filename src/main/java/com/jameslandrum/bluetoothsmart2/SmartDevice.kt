@@ -50,6 +50,7 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
     fun diconnect() = activeConnection?.disconnect()
 
     override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+        connecting = false
         when (newState) {
             BluetoothGatt.STATE_CONNECTED -> {
                 activeConnection = gatt
@@ -60,7 +61,6 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
                 connectionCallbacks.clear()
                 onDisconnect()
                 connected = false
-                connecting = false
             }
         }
     }
@@ -108,10 +108,12 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
             action.invoke(this@SmartDevice).join()
             val result = channel.receive()
             Log.d("BluetoothSmart", "Action Complete" + action.toString() + " " + result)
-            action.response(result)
             if (!result) {
                 queue.actions.clear()
-                queue.error(0)
+                queue.error.invoke(0)
+                return@async
+            } else {
+                action.response(result)
             }
         }
         queue.completed.invoke()
