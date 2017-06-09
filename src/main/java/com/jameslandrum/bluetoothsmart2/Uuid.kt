@@ -27,4 +27,11 @@ class Uuid(val uuid: UUID) {
 
     constructor(char: String) : this(CORE_UUID, char)
     constructor(service: String, char: String) : this(uuidFromPair(service,char))
+
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is UUID -> uuid == other
+            else -> false
+        }
+    }
 }

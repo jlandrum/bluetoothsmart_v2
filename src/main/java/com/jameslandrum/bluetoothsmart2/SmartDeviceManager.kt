@@ -16,6 +16,7 @@
 package com.jameslandrum.bluetoothsmart2;
 
 import com.jameslandrum.bluetoothsmart2.scanner.DeviceScanner;
+import com.jameslandrum.bluetoothsmart2.scanner.DeviceSet
 import com.jameslandrum.bluetoothsmart2.scanner.ScannerCallback
 
 @SuppressWarnings("ALL")
@@ -29,6 +30,9 @@ enum class SmartDeviceManager {
 
     private var isRunning = false
     private var scanner = DeviceScanner.instance
+
+    val devices : DeviceSet get() = scanner.devices
+    val identifiers get() = scanner.identifiers
 
     /**
      * Attemps to start scanning, if permissions are properly granted and Bluetooth is enabled.
@@ -54,17 +58,11 @@ enum class SmartDeviceManager {
         scanner.addIdentifier(identifier)
     }
 
-    fun getAllDevices() : List<SmartDevice> {
-        return scanner.getAllDevices()
-    }
-
     fun cleanup(staleTime: Int) {
-        scanner.getAllDevices()
+        scanner.devices
                 .filter { System.currentTimeMillis() - it.lastSeen > staleTime; }
                 .forEach { scanner.forgetDevice(it) }
     }
-
-    fun getDeviceByMac(address: String) = scanner.getAllDevices().find { it.address == address }
 
     fun enableDiscovery(b : Boolean) {
         scanner.discovery = b

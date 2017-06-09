@@ -41,5 +41,5 @@ SmartDeviceManager.getInstance().addIdentifier(NordicBlinky.getIdentifier());
 ```
 In any event that the application context is invalidated, you will need to call setActiveContext() to re-establish the context for bluetooth communication to work.
 
-Once you've verified the user has the necessary location permissions for Bluetooth Low Energy, simply call `SmartDeviceManager.getInstance().startScan()` to begin scanning. A callback can be configured using `SmartDeviceManager.getInstance().addScanListener()` to listen for discovered devices, iBeacon advertisements from discovered devices, and updated devices.
+Once you've verified the user has the necessary location permissions for Bluetooth Low Energy, simply call `SmartDeviceManager.getInstance().startScan()` to begin scanning. A callback can be configured using `SmartDeviceManager.getInstance().addScanListener()` to onChange for discovered devices, iBeacon advertisements from discovered devices, and updated devices.
 

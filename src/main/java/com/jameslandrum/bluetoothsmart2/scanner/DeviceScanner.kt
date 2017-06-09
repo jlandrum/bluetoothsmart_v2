@@ -8,20 +8,25 @@ import android.support.annotation.IntDef
 import android.support.annotation.RequiresApi
 import com.jameslandrum.bluetoothsmart2.Identifier
 import com.jameslandrum.bluetoothsmart2.SmartDevice
+import io.reactivex.Observable
+import io.reactivex.Observer
+import io.reactivex.rxkotlin.toFlowable
+import io.reactivex.rxkotlin.toObservable
+import java.lang.ref.WeakReference
 import java.lang.reflect.InvocationTargetException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.collections.HashSet
 
 @TargetApi(Build.VERSION_CODES.KITKAT)
 abstract class DeviceScanner {
     protected var scanMode: Int = 0
     protected var scanInterval: Int = 0
     protected val invalidDevices = ArrayList<String>()
-    protected val devices = ConcurrentHashMap<String, SmartDevice>()
-    protected val identifiers = HashSet<Identifier>()
 
-    val scanListners = HashSet<ScannerCallback>()
+    val identifiers = HashSet<Identifier>()
     var discovery = false
+    val devices = DeviceSet()
 
     companion object {
         val APPLE_PREFIX = byteArrayOf(0x4C, 0x00)
@@ -51,13 +56,13 @@ abstract class DeviceScanner {
 
     fun <T : SmartDevice> forgetDevice(device: T) {
         invalidDevices.remove(device.address)
-        devices.remove(device.address)
+        devices.removeIf { it.address == device.address }
     }
 
     fun <T : SmartDevice> injectDevice(device: T): T {
-        devices.remove(device.address)
-        invalidDevices.remove(device.address)
-        devices.put(device.address, device)
+        devices.removeIf { it.address == device.address }
+        invalidDevices -= device.address
+        devices += device
         return device
     }
 
@@ -66,7 +71,7 @@ abstract class DeviceScanner {
     abstract fun isScanning(): Boolean
 
     fun addIdentifier(identifier: Identifier) {
-        identifiers.add(identifier)
+        identifiers += identifier
         invalidDevices.clear()
     }
 
@@ -76,7 +81,7 @@ abstract class DeviceScanner {
 
         val isBeacon = data[5] == APPLE_PREFIX[0] && data[6] == APPLE_PREFIX[1]
 
-        if (devices.containsKey(device.address)) {
+        if (devices.any { it.address == device.address }) {
             val target = devices[device.address]
             if (isBeacon) {
                 target?.onBeacon()
@@ -99,8 +104,7 @@ abstract class DeviceScanner {
                 try {
                     val k = identifier.deviceClass
                     val target = injectDevice(k, device)
-                    target?.updateAdvertisement(data, rssi)
-                    scanListners.forEach { it.onDeviceDiscovered(target) }
+                    target.updateAdvertisement(data, rssi)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -115,10 +119,10 @@ abstract class DeviceScanner {
     @RequiresApi(Build.VERSION_CODES.ECLAIR)
     @Throws(IllegalAccessException::class, InstantiationException::class, NoSuchMethodException::class, InvocationTargetException::class)
     fun <T : SmartDevice> injectDevice(k: Class<T>, device: BluetoothDevice): SmartDevice {
-        if (devices.contains(device.address)) return devices.get(device.address)!!
+        if (devices.available(device.address)) return devices[device.address]!!
 
         val target = k.getConstructor(BluetoothDevice::class.java).newInstance(device)
-        devices.put(device.address, target)
+        devices += target
         return target
     }
 
@@ -126,10 +130,6 @@ abstract class DeviceScanner {
     @Throws(IllegalAccessException::class, InstantiationException::class, NoSuchMethodException::class, InvocationTargetException::class)
     fun <T : SmartDevice> injectDevice(k: Class<T>, address: String): SmartDevice {
         return this.injectDevice(k, BluetoothAdapter.getDefaultAdapter().getRemoteDevice(address))
-    }
-
-    fun getAllDevices(): List<SmartDevice> {
-        return devices.values.toList()
     }
 
     fun getDeviceByMacAddress(macAddress: String): SmartDevice? {
@@ -144,3 +144,23 @@ interface OnDeviceUpdateListener {
 interface ScannerCallback {
     fun <T : SmartDevice> onDeviceDiscovered(device: T)
 }
+
+class DeviceSet : HashSet<SmartDevice>() {
+    private val listeners = WeakListeners()
+
+    operator fun get(macAddress: String) : SmartDevice? = this.find { it.address == macAddress }
+    operator fun get(index: Int) : SmartDevice? = this.elementAt(index)
+    fun available(macAddress: String) = this.any { it.address == macAddress }
+    override fun add(element: SmartDevice): Boolean {
+        val success = super.add(element)
+        if (success) {
+            listeners.removeIf { it.get() == null }
+            listeners.forEach { it.get()?.invoke() }
+        }
+        return success
+    }
+    fun onChange(call: ()->Unit) = listeners.add(WeakReference(call))
+}
+
+typealias WeakListeners = ArrayList<WeakReference<()->Unit>>
+

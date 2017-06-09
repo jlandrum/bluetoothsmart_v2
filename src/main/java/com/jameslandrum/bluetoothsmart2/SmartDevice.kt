@@ -1,9 +1,6 @@
 package com.jameslandrum.bluetoothsmart2
 
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.*
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.experimental.*
@@ -17,15 +14,14 @@ typealias ActionQueue = ConcurrentLinkedQueue<CharAction>
 abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCallback() {
     internal var activeConnection : BluetoothGatt? = null
     private var servicesDiscovered : Boolean = false
-    private var characteristicCallbacks = ConcurrentHashMap<CharHandle,(ByteArray)->Unit>()
     private var queue = ConcurrentLinkedQueue<()->Unit>()
+    private var characteristicCallbacks = ConcurrentHashMap<CharHandle,(ByteArray)->Unit>()
 
     val address : String get() = nativeDevice.address
     val advertisement = ByteArray(62)
     var lastSeen : Long = 0L
     var connecting = false
     var connected = false
-    private val connectionCallbacks = ArrayList<((Boolean) -> Unit)>()
 
     val connectedOrConnecting : Boolean get() = connected || connecting
 
@@ -35,15 +31,15 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
     internal var channel : Channel<Boolean> = Channel<Boolean>()
     internal var thread = newSingleThreadContext("ActionThread_" + nativeDevice.address)
 
-    fun connect(context: Context, autoConnect: Boolean = false, callback: (Boolean) -> Unit) {
+    suspend fun connect(context: Context, autoConnect: Boolean = false) : Boolean {
         if (connected) {
-            callback.invoke(true)
+            return true
         } else {
-            connectionCallbacks += callback
             if (!connecting) {
                 nativeDevice.connectGatt(context, autoConnect, this)
                 connecting = true
             }
+            return channel.receive()
         }
     }
 
@@ -57,10 +53,11 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
                 activeConnection!!.discoverServices()
             }
             BluetoothGatt.STATE_DISCONNECTED -> {
-                connectionCallbacks.forEach { it.invoke(false); }
-                connectionCallbacks.clear()
                 onDisconnect()
                 connected = false
+                launch(thread) {
+                    channel.send(status == BluetoothGatt.GATT_SUCCESS)
+                }
             }
         }
     }
@@ -75,10 +72,21 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
         connected = true
         connecting = false
-        super.onServicesDiscovered(gatt, status)
         onConnect()
-        connectionCallbacks.forEach { it.invoke(true) }
-        connectionCallbacks.clear()
+        launch(thread) {
+            channel.send(status == BluetoothGatt.GATT_SUCCESS)
+        }
+    }
+
+    override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+        launch(thread) {
+            channel.send(status == BluetoothGatt.GATT_SUCCESS)
+        }
+    }
+
+    override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        characteristicCallbacks.filter { it.key.like(characteristic) }
+                .forEach { _, method -> method.invoke(characteristic.value) }
     }
 
     open fun onConnect() {}
@@ -105,8 +113,7 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
         while (queue.actions.isNotEmpty()) {
             val action = queue.actions.remove()
             Log.d("BluetoothSmart", "Invoking Action " + action.toString())
-            action.invoke(this@SmartDevice).join()
-            val result = channel.receive()
+            val result = action.invoke(this@SmartDevice)
             Log.d("BluetoothSmart", "Action Complete" + action.toString() + " " + result)
             if (!result) {
                 queue.actions.clear()
@@ -132,30 +139,48 @@ abstract class SmartDevice(val nativeDevice: BluetoothDevice) : BluetoothGattCal
     fun disconnect() {
         activeConnection?.disconnect()
     }
-}
 
-class QueueBuilder(val error : (Int)->Unit, val completed : ()->Unit) {
-    val actions = ActionQueue()
 
-    fun write(charHandle: CharHandle, value: ByteArray, result: (Boolean) -> Unit = {}) {
-        actions.add(CharWrite(charHandle, value, result))
+    class QueueBuilder(val error : (Int)->Unit, val completed : ()->Unit) {
+        val actions = ActionQueue()
+
+        fun write(charHandle: CharHandle, value: ByteArray, result: (Boolean) -> Unit = {}) {
+            actions.add(CharAction.CharWrite(charHandle, value, result))
+        }
+
+        fun connect(context: Context, result: (Boolean) -> Unit = {}) {
+            actions.add(CharAction.Connect(context, result))
+        }
+
+        fun read(charHandle: CharHandle, result: (Boolean, ByteArray) -> Unit ) {
+
+        }
+
+        fun enableNotifications(charHandle: CharHandle, descriptor: String, result: (Boolean) -> Unit = {}) =
+                enableNotifications(charHandle,Uuid(descriptor),result)
+
+        fun enableNotifications(charHandle: CharHandle, descriptor: Uuid, result: (Boolean) -> Unit = {}) {
+            actions.add(CharAction.CharRegister(charHandle, descriptor, true, result))
+        }
     }
 
-    fun connect(context: Context, result: (Boolean) -> Unit = {}) {
-        actions.add(Connect(context, result))
+    fun registerNotify(handle: CharHandle, notify: (ByteArray) -> Unit) {
+        characteristicCallbacks.put(handle,notify)
     }
 
-    fun read(charHandle: CharHandle, result: (Boolean, ByteArray) -> Unit ) {
+    interface UpdateListener {
+        fun onDeviceUpdated(device: SmartDevice)
+    }
 
+    interface CharHandle {
+        var charUuid : Uuid
+        var serviceUuid : Uuid
     }
 }
 
-interface UpdateListener {
-    fun onDeviceUpdated(device: SmartDevice)
-}
-
-interface CharHandle {
-    var charUuid : Uuid
-    var serviceUuid : Uuid
+fun SmartDevice.CharHandle.like(other: Any?): Boolean = when(other) {
+    is BluetoothGattCharacteristic -> this.serviceUuid.uuid == other.service.uuid && this.charUuid.uuid == other.uuid
+    is SmartDevice.CharHandle -> this.charUuid == other.charUuid && this.serviceUuid == other.serviceUuid
+    else -> false
 }
 

@@ -1,5 +1,7 @@
 package com.jameslandrum.bluetoothsmart2
 
+import android.bluetooth.BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+import android.bluetooth.BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.experimental.*
@@ -10,36 +12,57 @@ import kotlin.collections.HashSet
 
 interface CharAction {
     val response: (Boolean) -> Unit
-    fun invoke(smartDevice: SmartDevice): Job
-}
+    suspend fun invoke(smartDevice: SmartDevice): Boolean
 
-class CharWrite(val handle: CharHandle,
-                val data: ByteArray,
-                override val response: (Boolean) -> Unit) : CharAction {
+    class CharWrite(val handle: SmartDevice.CharHandle,
+                    val data: ByteArray,
+                    override val response: (Boolean) -> Unit) : CharAction {
 
-    override fun invoke(smartDevice: SmartDevice) = launch(smartDevice.thread) {
-        val char = smartDevice.activeConnection
-                ?.services?.find { it.uuid == handle.serviceUuid.uuid }
-                ?.characteristics?.find { it.uuid == handle.charUuid.uuid }
-        if (char == null) {
-            Log.d("BluetoothSmart", "Writing Char $handle failed - No such characteristic")
-            launch(smartDevice.thread) { smartDevice.channel.send(false) }
-        } else {
-            Log.d("BluetoothSmart", "Writing Char $handle with $data")
-            char.value = data
-            smartDevice.activeConnection!!.writeCharacteristic(char)
-        }
-    }
-}
-
-class Connect(val ctx: Context, override val response: (Boolean) -> Unit) : CharAction {
-    override fun invoke(smartDevice: SmartDevice) = launch(smartDevice.thread) {
-        Log.d("BluetoothSmart", "Connecting")
-        smartDevice.connect(ctx, false) {
-            launch(smartDevice.thread) {
-                smartDevice.channel.send(it)
-                Log.d("BluetoothSmart", "Connected")
+        override suspend fun invoke(smartDevice: SmartDevice) : Boolean {
+            val char = smartDevice.activeConnection
+                    ?.services?.find { it.uuid == handle.serviceUuid.uuid }
+                    ?.characteristics?.find { it.uuid == handle.charUuid.uuid }
+            if (char == null) {
+                Log.d("BluetoothSmart", "Writing Char $handle failed - No such characteristic")
+                return false
+            } else {
+                Log.d("BluetoothSmart", "Writing Char $handle with $data")
+                char.value = data
+                smartDevice.activeConnection!!.writeCharacteristic(char)
+                return smartDevice.channel.receive()
             }
         }
     }
+
+    class CharRegister(val handle: SmartDevice.CharHandle,
+                       val uuid: Uuid,
+                    val register: Boolean,
+                    override val response: (Boolean) -> Unit) : CharAction {
+
+        override suspend fun invoke(smartDevice: SmartDevice) : Boolean {
+            val desc = smartDevice.activeConnection
+                    ?.services?.find { it.uuid == handle.serviceUuid.uuid }
+                    ?.characteristics?.find { it.uuid == handle.charUuid.uuid }?.descriptors?.find { it.uuid == uuid.uuid }
+
+            if (desc == null) {
+                Log.d("BluetoothSmart", "Registering Char $handle failed - No such characteristic")
+                return false
+            } else {
+                Log.d("BluetoothSmart", "Registering Char $handle")
+                desc.setValue(ENABLE_NOTIFICATION_VALUE)
+                smartDevice.activeConnection!!.writeDescriptor(desc)
+                smartDevice.channel.receive()
+                smartDevice.activeConnection!!.setCharacteristicNotification(desc.characteristic, true)
+                return smartDevice.channel.receive()
+            }
+        }
+    }
+
+    class Connect(val ctx: Context, override val response: (Boolean) -> Unit) : CharAction {
+        override suspend fun invoke(smartDevice: SmartDevice) : Boolean {
+            Log.d("BluetoothSmart", "Connecting")
+            return smartDevice.connect(ctx, false)
+        }
+    }
 }
+
