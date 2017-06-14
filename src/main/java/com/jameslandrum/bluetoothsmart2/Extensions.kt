@@ -1,5 +1,6 @@
 package com.jameslandrum.bluetoothsmart2
 
+import java.math.BigInteger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -21,6 +22,9 @@ fun Int.asBytes(littleEndian : Boolean = false) = this.asBytes(4,littleEndian)
 fun Long.asBytes(littleEndian : Boolean = false) = this.asBytes(8,littleEndian)
 fun String.asBytes(encoding: String = "UTF-8") = this.toByteArray(java.nio.charset.Charset.forName(encoding))
 fun Boolean.asBytes() = (if (this) 1 else 0).asBytes(1)
+
+fun ByteArray.asInt() = BigInteger(this).toInt()
+fun ByteArray.asLong() = BigInteger(this).toLong()
 
 infix fun ByteArray.byte(id : Int) = this[id]
 infix fun Byte.bit(i : Int) = 0b1.shl(i).and(this.toInt()) == 0b1.shl(i)
